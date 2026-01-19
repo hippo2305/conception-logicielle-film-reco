@@ -9,6 +9,7 @@ class MAIN:
         load_dotenv()
         # Charge un fichier local si présent
         local_env_path = ".env.local"
+
         if os.path.exists(local_env_path):
             load_dotenv(dotenv_path=local_env_path, override=True)
 
@@ -33,7 +34,7 @@ class MAIN:
         for key, value in os.environ.items():
             if any(mask in key.lower() for mask in keyword_mask):
                 print(f"{key}=", end="")
-                for i in range(len(key)):
+                for _i in range(len(key)):
                     print("*", end="")
                 print("")
             else:
