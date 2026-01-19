@@ -1,0 +1,64 @@
+# -------------------------------------------------
+# Paramètres globaux
+# -------------------------------------------------
+
+# Longueur maximale d’une ligne (compatible avec Black)
+line-length = 88
+
+# Répertoires exclus de l’analyse
+exclude = [
+    ".venv",
+    "venv",
+    "__pycache__",
+    "migrations",
+]
+
+# Affiche les corrections appliquées automatiquement
+show-fixes = true
+
+
+# -------------------------------------------------
+# Linting (analyse statique)
+# -------------------------------------------------
+
+[lint]
+
+# Règles activées
+select = [
+    "E",    # Erreurs de style (indentation, espaces…)
+    "F",    # Erreurs logiques (imports manquants, variables inutilisées)
+    "W",    # Avertissements de style
+    "I",    # Organisation des imports
+    "B",    # Bugs subtils courants
+    "C4",   # Compréhensions inutilement complexes
+    "SIM",  # Simplifications évidentes
+    "UP",   # Syntaxe Python moderne
+    "N",    # Conventions de nommage
+    "ARG",  # Paramètres de fonctions inutilisés
+]
+
+# Règles ignorées
+ignore = [
+    "E501", # Longueur de ligne (gérée par le formatter)
+]
+
+[lint.isort]
+# Gestion des imports
+combine-as-imports = true
+force-sort-within-sections = true
+lines-after-imports = 2
+
+# -------------------------------------------------
+# Formatage du code
+# -------------------------------------------------
+
+[format]
+
+# Style de guillemets imposé
+quote-style = "double"
+
+# Style d’indentation (standard Python)
+indent-style = "space"
+
+# Type de fin de ligne (compatibilité multiplateforme)
+line-ending = "lf"
