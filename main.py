@@ -40,5 +40,8 @@ class MAIN:
                 print(f"{key}={value}")
 
 
+
+
+
 if __name__ == "__main__":
     print(MAIN.get_local_env())
