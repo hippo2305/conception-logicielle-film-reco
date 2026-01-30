@@ -1,1 +1,32 @@
-dotenv
+# Web Framework & Serveur
+fastapi==0.118.0
+uvicorn==0.37.0
+
+# Base de données / ORM / Sécurité
+psycopg2-binary==2.9.10
+bcrypt==5.0.0
+email-validator==2.3.0
+
+# Data Science, Analyse & Math
+numpy==2.3.3
+pandas==2.3.3
+matplotlib==3.10.6
+seaborn==0.13.2
+plotly==6.3.0
+plotext==5.3.2
+openpyxl==3.1.5
+lxml==6.0.2
+
+# Outils de développement / Code style
+black==25.9.0
+pytest==8.4.2
+python-dotenv==1.1.1
+requests==2.32.5
+
+# Interface utilisateur (console ou GUI)
+rich==14.2.0
+questionary==2.1.1
+inquirer==3.4.1
+
+# Modèles & Validation
+pydantic==2.12.3
