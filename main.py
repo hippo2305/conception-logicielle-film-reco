@@ -33,7 +33,7 @@ class MAIN:
         for key, value in os.environ.items():
             if any(mask in key.lower() for mask in keyword_mask):
                 print(f"{key}=", end="")
-                for i in range(len(key)):
+                for _ in range(len(key)):
                     print("*", end="")
                 print("")
             else:
@@ -42,4 +42,3 @@ class MAIN:
 
 if __name__ == "__main__":
     print(MAIN.get_local_env())
-
