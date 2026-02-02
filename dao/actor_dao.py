@@ -1,12 +1,12 @@
 import logging
 
 from business_object.actor import Actor
+from dao.dao import DAO
 from dao.db_connection import DBConnection
 from utils.log_decorator import log
-from utils.singleton import Singleton
 
 
-class ActorDao(metaclass=Singleton):
+class ActorDao(DAO):
     """
     Cette classe permet d'interagir avec la table actor de la base de données.
     Elle gère l'ajout et la récupération des acteurs.
@@ -35,35 +35,33 @@ class ActorDao(metaclass=Singleton):
             True si insertion réussie, False sinon
         """
         try:
-            with DBConnection().connection as connection:
-                with connection.cursor() as cursor:
-                    # Vérifie si l'acteur existe déjà
-                    cursor.execute(
-                        "SELECT 1 FROM actor WHERE id_actor = %(id_actor)s;",
-                        {"id_actor": actor.id_actor},
+            with DBConnection().connection as connection, connection.cursor() as cursor:
+                # Vérifie si l'acteur existe déjà
+                cursor.execute(
+                    "SELECT 1 FROM ACTOR WHERE id_actor = %(id_actor)s;",
+                    {"id_actor": actor.id_actor},
+                )
+
+                if cursor.fetchone() is not None:
+                    logging.info(
+                        f"L'acteur avec id_actor={actor.id_actor} existe déjà."
                     )
+                    return False
 
-                    if cursor.fetchone() is not None:
-                        logging.info(
-                            f"L'acteur avec id_actor={actor.id_actor} existe déjà."
-                        )
-                        return False
-
-                    cursor.execute(
-                        """
-                        INSERT INTO actor (id_actor, nom, prenom, age)
-                        VALUES (%(id_actor)s, %(nom)s, %(prenom)s, %(age)s);
-                        """,
-                        {
-                            "id_actor": actor.id_actor,
-                            "nom": actor.nom,
-                            "prenom": actor.prenom,
-                            "age": actor.age,
-                        },
-                    )
-
-                connection.commit()
-                return True
+                cursor.execute(
+                    """
+                    INSERT INTO ACTOR (id_actor, nom, prenom, age)
+                    VALUES (%(id_actor)s, %(nom)s, %(prenom)s, %(age)s);
+                    """,
+                    {
+                        "id_actor": actor.id_actor,
+                        "nom": actor.nom,
+                        "prenom": actor.prenom,
+                        "age": actor.age,
+                    },
+                )
+            connection.commit()
+            return True
 
         except Exception as e:
             logging.error(f"Erreur lors de l'insertion de l'acteur : {e}")
@@ -79,7 +77,7 @@ class ActorDao(metaclass=Singleton):
         """
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute("SELECT * FROM actor;")
+                cursor.execute("SELECT * FROM ACTOR;")
                 rows = cursor.fetchall()
         except Exception as e:
             logging.info(e)

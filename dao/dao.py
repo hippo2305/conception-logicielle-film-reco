@@ -1,4 +1,4 @@
-from db_connection import DBConnection
+from dao.db_connection import DBConnection
 
 
 class DAO:
@@ -6,7 +6,7 @@ class DAO:
         """
         Crée la BD si elle n'est pas créée
         """
-        self.ordre_suppr_tables = ["ACTEUR", "FILMS", "USER"]
+        self.ordre_suppr_tables = ["ACTEUR", "FILM", "USER"]
         # Ordre logique de suppression pour respecter les contraintes FK
         with DBConnection().connection as connection, connection.cursor() as cursor:
             cursor.execute("""
@@ -16,7 +16,7 @@ class DAO:
                 pseudo VARCHAR(255) NOT NULL UNIQUE,
                 mdp VARCHAR(255) NOT NULL
                 );
-                CREATE TABLE IF NOT EXISTS FILMS (
+                CREATE TABLE IF NOT EXISTS FILM (
                 id_films INTEGER PRIMARY KEY DEFAULT nextval('id_sequence'),
                 titre VARCHAR(255) NOT NULL,
                 realisateur VARCHAR(255) NOT NULL,
@@ -32,6 +32,7 @@ class DAO:
                 UNIQUE(nom, prenom)
                 );
                 """)
+            connection.commit()
 
     def _del_data_table(self, nom_table: str | None = None) -> str | None:
         """

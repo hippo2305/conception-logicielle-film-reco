@@ -1,12 +1,12 @@
 import logging
 
+from business_object.film import Film
+from dao.dao import DAO
 from dao.db_connection import DBConnection
 from utils.log_decorator import log
-from utils.singleton import Singleton
-from business_object.film import Film
 
 
-class FilmDao(metaclass=Singleton):
+class FilmDAO(DAO):
     """
         Cette classe permet d'intéragir essentiellement avec la table film de la base de
         données. Dispose de méthodes pour ajouter et retourner des films selon des filtres.
@@ -33,37 +33,36 @@ class FilmDao(metaclass=Singleton):
         """
 
         try:
-            with DBConnection().connection as connection:
-                with connection.cursor() as cursor:
+            with DBConnection().connection as connection, connection.cursor() as cursor:
 
-                    # Vérifie si le film existe déjà
-                    cursor.execute(
-                        "SELECT 1 FROM film WHERE id_film = %(id_film)s;",
-                        {"id_film": film.id_film},
+                # Vérifie si le film existe déjà
+                cursor.execute(
+                    "SELECT 1 FROM FILM WHERE id_film = %(id_film)s;",
+                    {"id_film": film.id_film},
+                )
+
+                if cursor.fetchone() is not None:
+                    logging.info(
+                        f"Le film avec id_film={film.id_film} existe déjà."
                     )
+                    return False
 
-                    if cursor.fetchone() is not None:
-                        logging.info(
-                            f"Le film avec id_film={film.id_film} existe déjà."
-                        )
-                        return False
+                # Insertion du film
+                cursor.execute(
+                    """
+                    INSERT INTO FILM (id_film, titre, realisateur, genre)
+                    VALUES (%(id_film)s, %(titre)s, %(realisateur)s, %(genre)s);
+                    """,
+                    {
+                        "id_film": film.id_film,
+                        "titre": film.titre,
+                        "realisateur": film.realisateur,
+                        "genre": film.genre,
+                    },
+                )
 
-                    # Insertion du film
-                    cursor.execute(
-                        """
-                        INSERT INTO film (id_film, titre, realisateur, genre)
-                        VALUES (%(id_film)s, %(titre)s, %(realisateur)s, %(genre)s);
-                        """,
-                        {
-                            "id_film": film.id_film,
-                            "titre": film.titre,
-                            "realisateur": film.realisateur,
-                            "genre": film.genre,
-                        },
-                    )
-
-                connection.commit()
-                return True
+            connection.commit()
+            return True
 
         except Exception as e:
             logging.error(f"Erreur lors de l'insertion du film : {e}")
@@ -76,7 +75,7 @@ class FilmDao(metaclass=Singleton):
         """
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                    cursor.execute("SELECT * FROM film;")
+                    cursor.execute("SELECT * FROM FILM;")
                     rows = cursor.fetchall()
 
         except Exception as e:

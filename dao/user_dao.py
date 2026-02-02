@@ -1,7 +1,7 @@
 from ast import List
 
 from business_object import Admin, Client, User
-from dao import db_connexion
+from dao.db_connection import DBConnection
 from utils import Logger
 
 
@@ -34,15 +34,15 @@ class UserDao:
         Exception
             Si la connexion à la base de données échoue
         """
-        self.db_conn = db_connexion().connection
+        self.db_conn = DBConnection().connection
         self.logger = Logger()
 
     def create(self, user: User, role: str = "client") -> bool:
         """
-        Insère un nouvel utilisateur dans la table 'users'.
+        Insère un nouvel utilisateur dans la table 'USER'.
         """
         sql = (
-            "INSERT INTO users (pseudo, email, listfilms, password, role, "
+            "INSERT INTO USER (pseudo, email, listfilms, password, role, "
             "creation_date) VALUES (%s, %s, %s, %s, %s);"
         )
 
@@ -87,7 +87,7 @@ class UserDao:
         se faire dans le Service avec une fonction de vérification de hash.
 
         """
-        sql = "SELECT * FROM users WHERE pseudo = %s;"
+        sql = "SELECT * FROM USER WHERE pseudo = %s;"
         values = (pseudo,)
 
         try:
@@ -124,7 +124,7 @@ class UserDao:
         nécessiter une vérification par email dans un cas réel.
 
         """
-        sql = "UPDATE users SET email = %s WHERE pseudo = %s;"
+        sql = "UPDATE USER SET email = %s WHERE pseudo = %s;"
         values = (new_email, pseudo)
         try:
             with self.db_conn.cursor() as cursor:
@@ -142,7 +142,7 @@ class UserDao:
         Le mot de passe fourni DOIT déjà être hashé.
 
         """
-        sql = "UPDATE users SET password = %s WHERE pseudo = %s;"
+        sql = "UPDATE USER SET password = %s WHERE pseudo = %s;"
         values = (new_psswd, pseudo)
         try:
             with self.db_conn.cursor() as cursor:
@@ -158,7 +158,7 @@ class UserDao:
         """
         Supprime définitivement un utilisateur de la base de données.
         """
-        sql = "DELETE FROM users WHERE pseudo = %s;"
+        sql = "DELETE FROM USER WHERE pseudo = %s;"
         values = (pseudo,)
 
         try:
@@ -174,7 +174,7 @@ class UserDao:
         """
         Récupère tous les utilisateurs de la base de données.
         """
-        sql = "SELECT * FROM users;"
+        sql = "SELECT * FROM USER;"
         try:
             with self.db_conn.cursor() as cursor:
                 cursor.execute(sql)
@@ -212,7 +212,7 @@ class UserDao:
         """
         Récupère un utilisateur spécifique par son pseudo.
         """
-        sql = "SELECT * FROM users WHERE pseudo = %s;"
+        sql = "SELECT * FROM USER WHERE pseudo = %s;"
         values = (pseudo,)
 
         try:
