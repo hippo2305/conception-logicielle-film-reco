@@ -1,7 +1,7 @@
 class Singleton(type):
     """
-    Toutes les classes qui hériteront de Singleton n'auront qu'une seule et unique instance
-    -> https://refactoring.guru/fr/design-patterns/singleton
+    Toutes les classes qui hériteront de Singleton n'auront
+    qu'une seule et unique instance
     """
 
     _instances = {}
