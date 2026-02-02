@@ -1,7 +1,7 @@
 from ast import List
 
 from business_object import Admin, Client, User
-from dao import connexion
+from dao import db_connexion
 from utils import Logger
 
 
@@ -34,7 +34,7 @@ class UserDao:
         Exception
             Si la connexion à la base de données échoue
         """
-        self.db_conn = connexion().connection
+        self.db_conn = db_connexion().connection
         self.logger = Logger()
 
     def create(self, user: User, role: str = "client") -> bool:

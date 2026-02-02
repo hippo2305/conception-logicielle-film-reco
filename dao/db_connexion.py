@@ -7,7 +7,7 @@ from psycopg2.extras import RealDictCursor
 from utils.singleton import Singleton
 
 
-class Connexion(metaclass=Singleton):
+class Dbconnexion(metaclass=Singleton):  # noqa: N801
     """
     Classe de connexion à la base de données.
     Elle permet de n'ouvrir qu'une seule et unique connexion.
@@ -33,7 +33,7 @@ class Connexion(metaclass=Singleton):
         self._initialized = True  # marque l'instance comme initialisée
 
     @property
-    def connection(self):
+    def db_connection(self):
         return self.__connection
 
     def close(self):
