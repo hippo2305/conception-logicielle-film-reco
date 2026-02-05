@@ -1,15 +1,15 @@
 import logging
 
+from business_object.film import Film
 from dao.db_connection import DBConnection
 from utils.log_decorator import log
 from utils.singleton import Singleton
-from business_object.film import Film
 
 
 class FilmDao(metaclass=Singleton):
     """
-        Cette classe permet d'intéragir essentiellement avec la table film de la base de
-        données. Dispose de méthodes pour ajouter et retourner des films selon des filtres.
+    Cette classe permet d'intéragir essentiellement avec la table film de la base de
+    données. Dispose de méthodes pour ajouter et retourner des films selon des filtres.
     """
 
     @log
@@ -35,7 +35,6 @@ class FilmDao(metaclass=Singleton):
         try:
             with DBConnection().connection as connection:
                 with connection.cursor() as cursor:
-
                     # Vérifie si le film existe déjà
                     cursor.execute(
                         "SELECT 1 FROM film WHERE id_film = %(id_film)s;",
@@ -76,8 +75,8 @@ class FilmDao(metaclass=Singleton):
         """
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                    cursor.execute("SELECT * FROM film;")
-                    rows = cursor.fetchall()
+                cursor.execute("SELECT * FROM film;")
+                rows = cursor.fetchall()
 
         except Exception as e:
             logging.info(e)
@@ -123,6 +122,7 @@ class FilmDao(metaclass=Singleton):
             raise
 
         return [self._row_to_film(r) for r in rows] if rows else []
+
     @log
     def get_films_by_actor(self, actor) -> list[Film]:
         """
@@ -158,8 +158,8 @@ class FilmDao(metaclass=Singleton):
         """Retourne la liste des genres enregistrés en base."""
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                    cursor.execute("SELECT DISTINCT UPPER(genre) AS genre FROM film;")
-                    res = cursor.fetchall()
+                cursor.execute("SELECT DISTINCT UPPER(genre) AS genre FROM film;")
+                res = cursor.fetchall()
         except Exception as e:
             logging.info(e)
             raise
@@ -171,8 +171,10 @@ class FilmDao(metaclass=Singleton):
         """Retourne la liste des réalisateurs enregistrés en base."""
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                    cursor.execute("SELECT DISTINCT UPPER(realisateur) AS realisateur FROM film;")
-                    res = cursor.fetchall()
+                cursor.execute(
+                    "SELECT DISTINCT UPPER(realisateur) AS realisateur FROM film;"
+                )
+                res = cursor.fetchall()
         except Exception as e:
             logging.info(e)
             raise
@@ -184,8 +186,8 @@ class FilmDao(metaclass=Singleton):
         """Retourne la liste des identifiants des films existants en base."""
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                    cursor.execute("SELECT DISTINCT id_film FROM film;")
-                    res = cursor.fetchall()
+                cursor.execute("SELECT DISTINCT id_film FROM film;")
+                res = cursor.fetchall()
         except Exception as e:
             logging.info(e)
             raise
@@ -197,14 +199,14 @@ class FilmDao(metaclass=Singleton):
         """Trouve un film à partir de son identifiant."""
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                    cursor.execute(
-                        """
+                cursor.execute(
+                    """
                         SELECT * FROM film
                         WHERE id_film = %(id_film)s;
                         """,
-                        {"id_film": id_film},
-                    )
-                    res = cursor.fetchone()
+                    {"id_film": id_film},
+                )
+                res = cursor.fetchone()
         except Exception as e:
             logging.info(e)
             raise
@@ -224,14 +226,14 @@ class FilmDao(metaclass=Singleton):
         """Trouve les films selon un genre donné (insensible à la casse)."""
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                    cursor.execute(
-                        """
+                cursor.execute(
+                    """
                         SELECT * FROM film
                         WHERE LOWER(genre) = LOWER(%(genre)s);
                         """,
-                        {"genre": genre},
-                    )
-                    res = cursor.fetchall()
+                    {"genre": genre},
+                )
+                res = cursor.fetchall()
         except Exception as e:
             logging.info(e)
             raise
@@ -254,14 +256,14 @@ class FilmDao(metaclass=Singleton):
         """Trouve les films selon un réalisateur donné (insensible à la casse)."""
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                    cursor.execute(
-                        """
+                cursor.execute(
+                    """
                         SELECT * FROM film
                         WHERE LOWER(realisateur) = LOWER(%(realisateur)s);
                         """,
-                        {"realisateur": realisateur},
-                    )
-                    res = cursor.fetchall()
+                    {"realisateur": realisateur},
+                )
+                res = cursor.fetchall()
         except Exception as e:
             logging.info(e)
             raise
@@ -287,15 +289,15 @@ class FilmDao(metaclass=Singleton):
         """
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                    cursor.execute(
-                        """
+                cursor.execute(
+                    """
                         SELECT * FROM film
                         WHERE titre ILIKE %(pattern)s
                         ORDER BY titre ASC;
                         """,
-                        {"pattern": f"%{titre}%"},
-                    )
-                    res = cursor.fetchall()
+                    {"pattern": f"%{titre}%"},
+                )
+                res = cursor.fetchall()
         except Exception as e:
             logging.info(e)
             raise
@@ -312,4 +314,3 @@ class FilmDao(metaclass=Singleton):
                     )
                 )
         return films
-
