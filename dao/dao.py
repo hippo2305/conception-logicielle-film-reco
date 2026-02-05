@@ -6,18 +6,18 @@ class DAO:
         """
         Crée la BD si elle n'est pas créée
         """
-        self.ordre_suppr_tables = ["ACTEUR", "FILM", "USER"]
+        self.ordre_suppr_tables = ["ACTEUR", "FILM", "USERS"]
         # Ordre logique de suppression pour respecter les contraintes FK
         with DBConnection().connection as connection, connection.cursor() as cursor:
             cursor.execute("""
-                CREATE SEQUENCE IF NOT EXISTS id_sequence START 1;
-                CREATE TABLE IF NOT EXISTS USER (
-                id_user INTEGER PRIMARY KEY DEFAULT nextval('id_sequence'),
-                pseudo VARCHAR(255) NOT NULL UNIQUE,
-                mdp VARCHAR(255) NOT NULL
+                CREATE TABLE IF NOT EXISTS USERS (
+                id_user SERIAL PRIMARY KEY,
+                pseudo VARCHAR(255) NOT NULL,
+                mdp VARCHAR(255) NOT NULL,
+                UNIQUE(pseudo, mdp)
                 );
                 CREATE TABLE IF NOT EXISTS FILM (
-                id_films INTEGER PRIMARY KEY DEFAULT nextval('id_sequence'),
+                id_films SERIAL PRIMARY KEY,
                 titre VARCHAR(255) NOT NULL,
                 realisateur VARCHAR(255) NOT NULL,
                 annee INT,
@@ -25,7 +25,7 @@ class DAO:
                 UNIQUE(titre, realisateur)
                 );
                 CREATE TABLE IF NOT EXISTS ACTOR (
-                id_actor INTEGER PRIMARY KEY DEFAULT nextval('id_sequence'),
+                id_actor SERIAL PRIMARY KEY,
                 nom VARCHAR(255) NOT NULL,
                 prenom VARCHAR(255) NOT NULL,
                 age INTEGER,
