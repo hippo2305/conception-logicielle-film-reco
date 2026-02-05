@@ -15,7 +15,7 @@ class Admin(User):
         L'adresse email de l'administrateur.
     _psswd : str
         Le mot de passe de l'administrateur.
-    listfilms : list[films]
+    listfilms : list[film]
         La liste des films déjà vus
     _role : str
         Le rôle associé, par défaut "admin".
@@ -44,7 +44,7 @@ class Admin(User):
         Returns
         -------
         str
-            Chaîne contenant pseudo, email, rôle et date de création.
+            Chaîne contenant pseudo, email et rôle.
         """
         return (
             f"Admin(pseudo='{self.pseudo}', email='{self.email}', role='{self._role}')"

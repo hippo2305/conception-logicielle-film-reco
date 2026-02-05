@@ -16,7 +16,7 @@ class Client(User):
         L'adresse email du client (hérité de User).
     _psswd : str
         Le mot de passe du client (hashé dans la couche Service).
-    listfilms : list[films]
+    listfilms : list[film]
         La liste des films déjà vus
     _role : str
         Le rôle du client, par défaut "client".
