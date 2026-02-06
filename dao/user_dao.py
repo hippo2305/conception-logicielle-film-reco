@@ -1,8 +1,7 @@
-from ast import List
+from utils.logger import Logger
 
 from business_object import Admin, Client, User
 from dao.db_connection import DBConnection
-from utils import Logger
 
 
 class UserDao:
@@ -170,7 +169,7 @@ class UserDao:
             self.db_conn.rollback()
             return False
 
-    def get_all_users(self) -> List[User] | None:
+    def get_all_users(self) -> list[User] | None:
         """
         Récupère tous les utilisateurs de la base de données.
         """
