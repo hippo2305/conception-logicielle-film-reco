@@ -6,7 +6,7 @@ from dao.db_connection import DBConnection
 from utils.log_decorator import log
 
 
-class ActorDao(DAO):
+class ActorDAO(DAO):
     """
     Cette classe permet d'interagir avec la table actor de la base de données.
     Elle gère l'ajout et la récupération des acteurs.
@@ -24,7 +24,6 @@ class ActorDao(DAO):
         ----------
         actor : Actor
             Objet Actor contenant :
-            - id_actor
             - nom
             - prenom
             - age
@@ -38,26 +37,27 @@ class ActorDao(DAO):
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 # Vérifie si l'acteur existe déjà
                 cursor.execute(
-                    "SELECT 1 FROM ACTOR WHERE id_actor = %(id_actor)s;",
-                    {"id_actor": actor.id_actor},
+                    "SELECT 1 FROM ACTOR WHERE nom = %(nom)s AND prenom = %(prenom)s;",
+                    {
+                        "nom": actor.nom,
+                        "prenom": actor.prenom
+                    },
                 )
 
                 if cursor.fetchone() is not None:
                     logging.info(
-                        f"L'acteur avec id_actor={actor.id_actor} existe déjà."
+                        f"L'acteur {actor.prenom} {actor.nom} existe déjà."
                     )
                     return False
 
                 cursor.execute(
                     """
                     INSERT INTO ACTOR (id_actor, nom, prenom, age)
-                    VALUES (%(id_actor)s, %(nom)s, %(prenom)s, %(age)s);
+                    VALUES (%(nom)s, %(prenom)s);
                     """,
                     {
-                        "id_actor": actor.id_actor,
                         "nom": actor.nom,
                         "prenom": actor.prenom,
-                        "age": actor.age,
                     },
                 )
             connection.commit()

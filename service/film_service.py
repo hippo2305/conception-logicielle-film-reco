@@ -1,5 +1,5 @@
-from business_object.film import Film
 from business_object.actor import Actor
+from business_object.film import Film
 from dao.film_dao import FilmDao
 
 
@@ -36,7 +36,7 @@ class FilmService:
     # -----------------------------
     def add_casting(self, film: Film, actor: Actor) -> bool:
         """
-        Ajoute un acteur au casting d’un film.
+        Ajoute un acteur au casting d'un film.
         """
         if actor not in film.casting:
             film.casting.append(actor)
