@@ -21,7 +21,6 @@ def svc():
     """Fixture UserService avec DAO et utilitaires mockés."""
     service = UserService(user_dao=MagicMock())
     service.user_dao = MagicMock()
-    service.logger = MagicMock()
     service.PasswordProcessing = MagicMock()
     return service
 
@@ -93,7 +92,7 @@ def test_signup_bad_password(svc):
 
 
 def test_signup_success(svc):
-    """Signup réussi. Retourne l'utilisateur et log l'action."""
+    """Signup réussi. Retourne l'utilisateur."""
     user = MagicMock(spec=User)
     user.email = "ok@ex.com"
     user.pseudo = "new"

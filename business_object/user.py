@@ -44,6 +44,11 @@ class User:
         self._psswd = psswd
         self.listfilms = listfilms
 
+    @property
+    def psswd(self):
+        """Retourne le mot de passe."""
+        return self._psswd
+
     def __str__(self) -> str:
         """
         Retourne une représentation lisible de l'utilisateur.

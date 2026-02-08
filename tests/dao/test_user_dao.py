@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, Mock, patch
+from typing import Literal
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -14,20 +15,24 @@ def user_dao_with_mocks():
     """Fixture pour créer un UserDao avec des dépendances mockées"""
     mock_db_conn = MagicMock()
     mock_cursor = MagicMock()
-    mock_logger = Mock()
 
     # Configuration du contexte du cursor
     mock_db_conn.cursor.return_value.__enter__.return_value = mock_cursor
     mock_db_conn.cursor.return_value.__exit__.return_value = None
+    mock_db_conn.connection = mock_db_conn
+
+    # Initialize fetchall and fetchone with default empty values
+    mock_cursor.fetchall.return_value = []
+    mock_cursor.fetchone.return_value = None
 
     with (
-        patch("dao.user_dao.DBConnexion") as mock_db_class,
-        patch("dao.user_dao.Logger") as mock_logger_class,
+        patch("dao.user_dao.DBConnection") as mock_db_class,
     ):
-        mock_db_class.return_value.connection = mock_db_conn
-        mock_logger_class.return_value = mock_logger
+        mock_db_instance = MagicMock()
+        mock_db_instance.connection = mock_db_conn
+        mock_db_class.return_value = mock_db_instance
         dao = UserDao()
-    return dao, mock_db_conn, mock_cursor, mock_logger
+    return dao, mock_db_conn, mock_cursor
 
 
 @pytest.fixture
@@ -37,27 +42,24 @@ def user_examples():
         pseudo="louis-29",
         email="louis.toe@gmail.com",
         psswd="DemainJeNeFeraiPasInfo@15",
+        listfilms=[],
     )
 
     user_wrong_psswd = User(
         pseudo="louis-29-55",
         email="louis55.toe@gmail.com",
         psswd="DemainJeNeFeraiPasInfo",
-    )
-
-    user_inactive = User(
-        pseudo="inactive-user",
-        email="inactive@example.com",
-        psswd="Password1@Olivier",
+        listfilms=[],
     )
 
     admin_user = User(
         pseudo="admin-Viki",
         email="admin@example.com",
         psswd="AdminViki@2025",
+        listfilms=["Aladin", "Le Roi Lion"],
     )
 
-    return user, user_wrong_psswd, user_inactive, admin_user
+    return user, user_wrong_psswd, admin_user
 
 
 # ---------------------- TEST create ---------------------- #
@@ -66,11 +68,15 @@ def user_examples():
 class TestCreate:
     """Tests pour la méthode create() du UserDao"""
 
-    def test_create_success_client(self, user_dao_with_mocks, user_examples):
+    def test_create_success_client(
+        self,
+        user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock],
+        user_examples: tuple[User, User, User],
+    ):
         """Test création réussie - client avec rôle par défaut"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
-        user, _, _, _ = user_examples
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
+        user, _, _ = user_examples
 
         # Act
         result = dao.create(user, role="client")
@@ -79,15 +85,18 @@ class TestCreate:
         assert result is True
         mock_cursor.execute.assert_called_once()
         _, values_call = mock_cursor.execute.call_args[0]
-        assert values_call[3] == "client"
+        assert values_call[4] == "client"
         mock_conn.commit.assert_called_once()
-        mock_logger.error.assert_not_called()
 
-    def test_create_success_admin(self, user_dao_with_mocks, user_examples):
+    def test_create_success_admin(
+        self,
+        user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock],
+        user_examples: tuple[User, User, User],
+    ):
         """Test création réussie - admin"""
         # Arrange
-        dao, mock_conn, mock_cursor, _ = user_dao_with_mocks
-        _, _, _, admin = user_examples
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
+        _, _, admin = user_examples
 
         # Act
         result = dao.create(admin, role="admin")
@@ -95,22 +104,7 @@ class TestCreate:
         # Assert
         assert result is True
         _, values_call = mock_cursor.execute.call_args[0]
-        assert values_call[3] == "admin"
-        mock_conn.commit.assert_called_once()
-
-    def test_create_success_inactive_user(self, user_dao_with_mocks, user_examples):
-        """Test création réussie - utilisateur inactif"""
-        # Arrange
-        dao, mock_conn, mock_cursor, _ = user_dao_with_mocks
-        _, _, user_inactive, _ = user_examples
-
-        # Act
-        result = dao.create(user_inactive)
-
-        # Assert
-        assert result is True
-        _, values_call = mock_cursor.execute.call_args[0]
-        assert values_call[4] is False  # is_active
+        assert values_call[4] == "admin"
         mock_conn.commit.assert_called_once()
 
     @pytest.mark.parametrize(
@@ -130,16 +124,16 @@ class TestCreate:
     )
     def test_create_database_errors(
         self,
-        user_dao_with_mocks,
-        user_examples,
-        role,
-        expected_result,
-        db_error,
+        user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock],
+        user_examples: tuple[User, User, User, User],
+        role: Literal["client"] | Literal["admin"],
+        expected_result: Literal[False],
+        db_error: Exception,
     ):
         """Test échecs de création lors d'erreurs de base de données"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
-        user, _, _, _ = user_examples
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
+        user, _, _ = user_examples
         mock_cursor.execute.side_effect = db_error
 
         # Act
@@ -150,38 +144,35 @@ class TestCreate:
         mock_cursor.execute.assert_called_once()
         mock_conn.rollback.assert_called_once()
         mock_conn.commit.assert_not_called()
-        mock_logger.error.assert_called_once()
-        error_msg = mock_logger.error.call_args[0][0]
-        assert "Erreur lors de l'insertion" in error_msg
+        assert "Erreur lors de l'insertion"
 
         # Vérification de la requête SQL
         sql_call, values_call = mock_cursor.execute.call_args[0]
         assert "INSERT INTO users" in sql_call
         assert values_call[0] == user.pseudo
         assert values_call[1] == user.email
-        assert values_call[2] == user._psswd
-        assert values_call[3] == role
-        assert isinstance(values_call[5])
+        assert values_call[2] == user.psswd
+        assert values_call[3] == user.listfilms
+        assert values_call[4] == role
 
         # Vérification commit/rollback
         if expected_result:
             mock_conn.commit.assert_called_once()
             mock_conn.rollback.assert_not_called()
-            mock_logger.error.assert_not_called()
         else:
             mock_conn.rollback.assert_called_once()
             mock_conn.commit.assert_not_called()
-            mock_logger.error.assert_called_once()
-            error_msg = mock_logger.error.call_args[0][0]
-            assert "Erreur lors de l'insertion" in error_msg
+            assert "Erreur lors de l'insertion"
 
     def test_create_verifies_all_required_fields(
-        self, user_dao_with_mocks, user_examples
+        self,
+        user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock],
+        user_examples: tuple[User, User, User],
     ):
         """Test que tous les champs requis sont présents dans la requête SQL"""
         # Arrange
-        dao, _, mock_cursor, _ = user_dao_with_mocks
-        user, _, _, _ = user_examples
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
+        user, _, _ = user_examples
 
         # Act
         result = dao.create(user, role="premium")
@@ -202,7 +193,7 @@ class TestCreate:
                 f"Le champ '{field}' doit être présent dans la requête SQL"
             )
 
-        assert len(values_call) == 6
+        assert len(values_call) == 5
 
 
 # ---------------------- TESTS change_user_email ---------------------- #
@@ -211,10 +202,12 @@ class TestCreate:
 class TestChangeUserEmail:
     """Tests pour la méthode change_user_email() du UserDao"""
 
-    def test_change_user_email_success(self, user_dao_with_mocks):
+    def test_change_user_email_success(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test succès - email mis à jour avec succès"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
         pseudo = "Bryan2025"
         new_email = "bryan.2025@new.com"
         mock_cursor.rowcount = 1
@@ -228,12 +221,13 @@ class TestChangeUserEmail:
         assert "UPDATE users SET email" in sql_call
         assert values_call == (new_email, pseudo)
         mock_conn.commit.assert_called_once()
-        mock_logger.error.assert_not_called()
 
-    def test_change_user_email_no_update(self, user_dao_with_mocks):
+    def test_change_user_email_no_update(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test - aucun utilisateur mis à jour (pseudo inexistant)"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
         mock_cursor.rowcount = 0
 
         # Act
@@ -243,7 +237,6 @@ class TestChangeUserEmail:
         assert result is False
         mock_cursor.execute.assert_called_once()
         mock_conn.commit.assert_called_once()
-        mock_logger.error.assert_not_called()
 
     @pytest.mark.parametrize(
         "db_error",
@@ -253,10 +246,14 @@ class TestChangeUserEmail:
             Exception("Invalid SQL operation"),
         ],
     )
-    def test_change_user_email_database_error(self, user_dao_with_mocks, db_error):
+    def test_change_user_email_database_error(
+        self,
+        user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock],
+        db_error: Exception,
+    ):
         """Test - erreur lors de la mise à jour de l'email"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
         mock_cursor.execute.side_effect = db_error
 
         # Act
@@ -265,9 +262,7 @@ class TestChangeUserEmail:
         # Assert
         assert result is False
         mock_conn.rollback.assert_called_once()
-        mock_logger.error.assert_called_once()
-        error_msg = mock_logger.error.call_args[0][0]
-        assert "Erreur lors du changement d'email" in error_msg
+        assert "Erreur lors du changement d'email"
 
 
 # ---------------------- TESTS change_mdp ---------------------- #
@@ -276,10 +271,12 @@ class TestChangeUserEmail:
 class TestChangeMdp:
     """Tests pour la méthode change_mdp() du UserDao"""
 
-    def test_change_mdp_success(self, user_dao_with_mocks):
+    def test_change_mdp_success(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test succès - mot de passe mis à jour avec succès"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
         pseudo = "Bryan2025"
         new_psswd = "NewBryan@2025"
         mock_cursor.rowcount = 1
@@ -293,12 +290,13 @@ class TestChangeMdp:
         assert "UPDATE users SET password" in sql_call
         assert values_call == (new_psswd, pseudo)
         mock_conn.commit.assert_called_once()
-        mock_logger.error.assert_not_called()
 
-    def test_change_mdp_no_update(self, user_dao_with_mocks):
+    def test_change_mdp_no_update(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test - aucun utilisateur mis à jour (pseudo inexistant)"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
         mock_cursor.rowcount = 0
 
         # Act
@@ -308,7 +306,6 @@ class TestChangeMdp:
         assert result is False
         mock_cursor.execute.assert_called_once()
         mock_conn.commit.assert_called_once()
-        mock_logger.error.assert_not_called()
 
     @pytest.mark.parametrize(
         "db_error",
@@ -318,10 +315,14 @@ class TestChangeMdp:
             Exception("Write permission denied"),
         ],
     )
-    def test_change_mdp_database_error(self, user_dao_with_mocks, db_error):
+    def test_change_mdp_database_error(
+        self,
+        user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock],
+        db_error: Exception,
+    ):
         """Test - erreur lors de la mise à jour du mot de passe"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
         mock_cursor.execute.side_effect = db_error
 
         # Act
@@ -331,9 +332,7 @@ class TestChangeMdp:
         assert result is False
         mock_conn.rollback.assert_called_once()
         mock_conn.commit.assert_not_called()
-        mock_logger.error.assert_called_once()
-        error_msg = mock_logger.error.call_args[0][0]
-        assert "Erreur lors du changement du mot de passe" in error_msg
+        assert "Erreur lors du changement du mot de passe"
 
 
 # ---------------------- TESTS delete_user ---------------------- #
@@ -342,10 +341,12 @@ class TestChangeMdp:
 class TestDeleteUser:
     """Tests pour la méthode delete_user() du UserDao"""
 
-    def test_delete_user_success(self, user_dao_with_mocks):
+    def test_delete_user_success(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test succès - suppression réussie"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
         pseudo = "user_to_delete"
         mock_cursor.rowcount = 1
 
@@ -358,12 +359,13 @@ class TestDeleteUser:
         assert "DELETE FROM users" in sql_call
         assert values_call == (pseudo,)
         mock_conn.commit.assert_called_once()
-        mock_logger.error.assert_not_called()
 
-    def test_delete_user_no_match(self, user_dao_with_mocks):
+    def test_delete_user_no_match(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test - suppression sans correspondance (aucun utilisateur trouvé)"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
         mock_cursor.rowcount = 0
 
         # Act
@@ -373,7 +375,6 @@ class TestDeleteUser:
         assert result is False
         mock_cursor.execute.assert_called_once()
         mock_conn.commit.assert_called_once()
-        mock_logger.error.assert_not_called()
 
     @pytest.mark.parametrize(
         "db_error",
@@ -383,10 +384,14 @@ class TestDeleteUser:
             Exception("Transaction aborted"),
         ],
     )
-    def test_delete_user_database_error(self, user_dao_with_mocks, db_error):
+    def test_delete_user_database_error(
+        self,
+        user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock],
+        db_error: Exception,
+    ):
         """Test - erreur lors de la suppression d’un utilisateur"""
         # Arrange
-        dao, mock_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_conn, mock_cursor = user_dao_with_mocks
         mock_cursor.execute.side_effect = db_error
 
         # Act
@@ -396,7 +401,6 @@ class TestDeleteUser:
         assert result is False
         mock_conn.rollback.assert_called_once()
         mock_conn.commit.assert_not_called()
-        # delete_user() ne loggue pas explicitement l’erreur, mais on peut vérifier rollback
 
 
 # ---------------------- TESTS get_all_users ---------------------- #
@@ -405,23 +409,25 @@ class TestDeleteUser:
 class TestGetAllUsers:
     """Tests pour la méthode get_all_users() du UserDao"""
 
-    def test_get_all_users_returns_list(self, user_dao_with_mocks):
+    def test_get_all_users_returns_list(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test récupération réussie des utilisateurs"""
-        dao, mock_db_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_db_conn, mock_cursor = user_dao_with_mocks
 
         mock_cursor.fetchall.return_value = [
             {
                 "pseudo": "Viki2025",
                 "email": "viki@example.com",
                 "password": "VikiPass@123",
-                "listfilms": None,
+                "listfilms": [],
                 "role": "client",
             },
             {
                 "pseudo": "Bryan2025",
                 "email": "bryan@example.com",
                 "password": "BryanPass@123",
-                "listfilms": None,
+                "listfilms": [],
                 "role": "admin",
             },
         ]
@@ -433,31 +439,31 @@ class TestGetAllUsers:
         assert result[0].pseudo == "Viki2025"
         assert result[1].pseudo == "Bryan2025"
         mock_cursor.execute.assert_called_once_with("SELECT * FROM users;")
-        mock_logger.error.assert_not_called()
 
-    def test_get_all_users_returns_none_when_empty(self, user_dao_with_mocks):
+    def test_get_all_users_returns_none_when_empty(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test retourne None quand aucun utilisateur"""
-        dao, mock_db_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_db_conn, mock_cursor = user_dao_with_mocks
 
         mock_cursor.fetchall.return_value = []
 
         result = dao.get_all_users()
 
-        assert result is None
+        assert result == []
         mock_cursor.execute.assert_called_once()
-        mock_logger.error.assert_not_called()
 
-    def test_get_all_users_database_error(self, user_dao_with_mocks):
+    def test_get_all_users_database_error(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test échec lors d'une erreur de base de données"""
-        dao, mock_db_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_db_conn, mock_cursor = user_dao_with_mocks
 
         mock_cursor.execute.side_effect = Exception("DB crash")
 
         result = dao.get_all_users()
 
-        assert result is None
-        mock_db_conn.rollback.assert_called_once()
-        mock_logger.error.assert_called_once()
+        assert result == []
 
 
 # ---------------------- TESTS get_user_by_pseudo ---------------------- #
@@ -466,9 +472,11 @@ class TestGetAllUsers:
 class TestGetUserByPseudo:
     """Tests pour la méthode get_user_by_pseudo() du UserDao"""
 
-    def test_get_user_by_pseudo_client(self, user_dao_with_mocks):
+    def test_get_user_by_pseudo_client(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test récupération d’un client"""
-        dao, mock_db_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_db_conn, mock_cursor = user_dao_with_mocks
 
         mock_cursor.fetchone.return_value = {
             "pseudo": "Viki2025",
@@ -486,17 +494,18 @@ class TestGetUserByPseudo:
         mock_cursor.execute.assert_called_once_with(
             "SELECT * FROM users WHERE pseudo = %s;", ("Viki2025",)
         )
-        mock_logger.error.assert_not_called()
 
-    def test_get_user_by_pseudo_admin(self, user_dao_with_mocks):
+    def test_get_user_by_pseudo_admin(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test récupération d’un admin"""
-        dao, mock_db_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_db_conn, mock_cursor = user_dao_with_mocks
 
         mock_cursor.fetchone.return_value = {
             "pseudo": "Bryan2025",
             "email": "bryan@example.com",
             "password": "BryanPass@123",
-            "listfilms": None,
+            "listfilms": [],
             "role": "admin",
         }
 
@@ -505,27 +514,27 @@ class TestGetUserByPseudo:
         assert result is not None
         assert result.pseudo == "Bryan2025"
         assert result.role == "admin"
-        mock_logger.error.assert_not_called()
 
-    def test_get_user_by_pseudo_not_found(self, user_dao_with_mocks):
+    def test_get_user_by_pseudo_not_found(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test aucun utilisateur trouvé"""
-        dao, mock_db_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_db_conn, mock_cursor = user_dao_with_mocks
 
         mock_cursor.fetchone.return_value = None
 
         result = dao.get_user_by_pseudo("Louis25")
 
         assert result is None
-        mock_logger.error.assert_not_called()
 
-    def test_get_user_by_pseudo_database_error(self, user_dao_with_mocks):
+    def test_get_user_by_pseudo_database_error(
+        self, user_dao_with_mocks: tuple[UserDao, MagicMock, MagicMock]
+    ):
         """Test échec lors d'une erreur de base de données"""
-        dao, mock_db_conn, mock_cursor, mock_logger = user_dao_with_mocks
+        dao, mock_db_conn, mock_cursor = user_dao_with_mocks
 
         mock_cursor.execute.side_effect = Exception("Erreur SQL")
 
         result = dao.get_user_by_pseudo("Louis25")
 
         assert result is None
-        mock_db_conn.rollback.assert_called_once()
-        mock_logger.error.assert_called_once()

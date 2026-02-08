@@ -1,4 +1,3 @@
-import os
 import re
 
 import bcrypt
@@ -38,17 +37,16 @@ class PasswordProcessing:
     def validate_password(password: str) -> bool:
         """
         Vérifie que le mot de passe respecte les règles de sécurité :
-        - Minimum x caractères (x dans .env)
+        - Minimum 8 caractères
         - Contient au moins une majuscule
         - Contient au moins un chiffre
         - Contient au moins un caractère spécial (@, #, $, !, %, ^, &, *)
 
         """
-        if len(password) < int(os.environ["PASSWORD_LENGTH"]):
+        if len(password) < 8:
             return False
         if not re.search(r"[A-Z]", password):
             return False
         if not re.search(r"[0-9]", password):
             return False
-        if not re.search(r"[@#$!%^&*]", password):
-            return True
+        return re.search(r"[@#$!%^&*]", password) is not None
