@@ -1,5 +1,7 @@
 Ce projet, développé dans le cadre du cours de conception logicielle de 2e année à
-l'ENSAI, consiste à : - Récupérer des données sur les films via l'API TMDB - Gérer une base de donnée des films préférés des utilisateurs
+l'ENSAI, consiste à : 
+- Récupérer des données sur les films via l'API TMDB
+- Gérer une base de donnée des films préférés des utilisateurs
 - Fournir des fonctionnalités de recherche de film à partir de l'API
 
 # Installation et Mise en route
@@ -30,7 +32,6 @@ POSTGRES_DATABASE = ""
 POSTGRES_USER = ""
 POSTGRES_PASSWORD = ""
 ```
-**NB** : Il faut bien le configurer.
 
 ## 4. Lancer les tests
 
