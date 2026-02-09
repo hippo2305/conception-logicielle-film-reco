@@ -1,6 +1,7 @@
 import logging
 
 from business_object.actor import Actor
+from business_object.film import Film
 from dao.dao import DAO
 from dao.db_connection import DBConnection
 from utils.log_decorator import log
@@ -100,7 +101,7 @@ class ActorDAO(DAO):
     # -----------------------------
 
     @log
-    def get_actor_id(self, actor: Actor) -> int:
+    def get_id(self, actor: Actor) -> int:
         try:
             if not ActorDAO().exists(actor):
                 logging.info(
@@ -139,54 +140,60 @@ class ActorDAO(DAO):
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 cursor.execute("SELECT * FROM ACTOR;")
                 rows = cursor.fetchall()
+
         except Exception as e:
-            logging.info(e)
-            raise
+            logging.error(f"Erreur lors de la récupération des acteurs : {e}")
+            return None
 
         return [self._row_to_actor(row) for row in rows] if rows else []
 
-    '''
     @log
-    def get_actor_films:
-    '''
-
-    ''' ÉQUIVAUT À FilmDAO().get_film_casting() - Problème d'importation circulaire
-    @log
-    def get_actors_by_film(self, film) -> list[Actor]:
+    def get_films(self, actor: Actor) -> list[Film]:
         """
-        Retourne les acteurs jouant dans un film donné.
-        Hypothèse : table de jointure casting(id_film, id_actor).
+        Récupère tous les films dans lesquel a joué un acteur
         """
-        id_film = FilmDAO().get_film_id(film)
-
         try:
+            # Vérifie si le film existe
+            if not self.exists(actor):
+                logging.info(
+                    f"L'acteur {actor.prenom} {actor.nom} n'existe pas"
+                )
+                return None
+
+            # Récupère l'id de l'acteur
+            id_actor = self.get_id(actor)
+
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT a.id_actor, a.nom, a.prenom, a.age
-                    FROM ACTOR a
-                    JOIN CASTING c ON c.id_actor = a.id_actor
-                    WHERE c.id_film = %(id_film)s
-                    ORDER BY a.nom ASC;
+                    SELECT f.id_film, f.titre, f.realisateur, f.genre
+                    FROM FILM f
+                    JOIN CASTING c ON c.id_film = f.id_film
+                    WHERE c.id_actor = %(id_actor)s
+                    ORDER BY f.titre ASC;
                     """,
-                    {"id_film": id_film},
+                    {"id_actor": id_actor},
                 )
+                connection.commit()
                 rows = cursor.fetchall()
-        except Exception as e:
-            logging.info(e)
-            raise
 
-        return [self._row_to_actor(row) for row in rows] if rows else []
-    '''
+        except Exception as e:
+            logging.error(f"Erreur lors de la récupération du casting : {e}")
+            return None
+
+        return [self._row_to_film(row) for row in rows] if rows else None
 
     # -----------------------------
     # UTILITAIRE
     # -----------------------------
-    def _row_to_actor(self, row) -> Actor:
+    def _row_to_film(self, row) -> Film:
         """
-        Transforme une ligne SQL en objet Actor.
+        Transforme une ligne SQL en objet Film.
         """
-        return Actor(
-            nom=row["nom"],
-            prenom=row["prenom"],
+        film = Film(
+            titre=row["titre"],
+            realisateur=row["realisateur"],
+            genre=row["genre"],
         )
+
+        return film

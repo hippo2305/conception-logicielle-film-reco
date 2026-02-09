@@ -1,5 +1,6 @@
 import logging
 
+from business_object.actor import Actor
 from business_object.film import Film
 from dao.actor_dao import ActorDAO
 from dao.dao import DAO
@@ -73,7 +74,7 @@ class FilmDAO(DAO):
 
         try:
             # Vérifie si le film existe déjà
-            if FilmDAO().exists(film):
+            if self.exists(film):
                 logging.info(
                     f"Le film {film.titre} existe déjà."
                 )
@@ -106,7 +107,7 @@ class FilmDAO(DAO):
         Ajoute le casting d'un film dans la BDD et ajoute les associations
         """
         try:
-            id_film = FilmDAO().get_film_id(film)
+            id_film = FilmDAO().get_id(film)
 
             # Ajout des acteurs si non présents dans la BDD et récupération des id
             if film.casting:
@@ -114,7 +115,7 @@ class FilmDAO(DAO):
                     # N'ajout l'acteur que s'il n'est pas déjà dans la BDD
                     if not ActorDAO().exists(actor):
                         ActorDAO().add_actor(actor)
-                    id_actor = ActorDAO().get_actor_id(actor)
+                    id_actor = ActorDAO().get_id(actor)
 
                     # Insertion dans la table d'association
                     with DBConnection().connection as connection, connection.cursor() as cursor:
@@ -143,13 +144,13 @@ class FilmDAO(DAO):
             return None
 
     @log
-    def get_film_id(self, film: Film) -> int:
+    def get_id(self, film: Film) -> int:
         """
         Récupère l'id d'un film dans la BDD
         """
         try:
             # Vérifie si le film existe
-            if not FilmDAO().exists(film):
+            if not self.exists(film):
                 logging.info(
                     f"Le film {film.titre} n'existe pas"
                 )
@@ -186,8 +187,8 @@ class FilmDAO(DAO):
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 cursor.execute("SELECT * FROM FILM;")
+                connection.commit()
                 rows = cursor.fetchall()
-                print(rows)
 
         except Exception as e:
             logging.info(e)
@@ -206,14 +207,42 @@ class FilmDAO(DAO):
                 )
         return films
 
-    '''
     @log
-    def get_film_casting:
-    '''
+    def get_casting(self, film: Film) -> list[Actor]:
+        try:
+            # Vérifie si le film existe
+            if not self.exists(film):
+                logging.info(
+                    f"Le film {film.titre} n'existe pas"
+                )
+                return None
+
+            # Récupère l'id du film
+            id_film = self.get_id(film)
+
+            with DBConnection().connection as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT a.id_actor, a.nom, a.prenom
+                    FROM ACTOR a
+                    JOIN CASTING c ON c.id_actor = a.id_actor
+                    WHERE c.id_film = %(id_film)s
+                    ORDER BY a.nom ASC;
+                    """,
+                    {"id_film": id_film},
+                )
+                connection.commit()
+                rows = cursor.fetchall()
+
+        except Exception as e:
+            logging.error(f"Erreur lors de la récupération du casting : {e}")
+            return None
+
+        return [self._row_to_actor(row) for row in rows] if rows else None
 
     '''
     @log
-    def get_films_by_user(self, user) -> list[Film]:
+    def get_by_user(self, user) -> list[Film]:
         """
         Retourne les films associés à un utilisateur.
         Hypothèse : table de liaison aime(id_user, id_film).
@@ -232,35 +261,6 @@ class FilmDAO(DAO):
                     ORDER BY f.titre ASC;
                     """,
                     {"id_user": id_user},
-                )
-                rows = cursor.fetchall()
-        except Exception as e:
-            logging.info(e)
-            raise
-
-        return [self._row_to_film(r) for r in rows] if rows else []
-    '''
-
-    ''' ÉQUIVAUT À ActorDAO().get_actor_films() - Problème d'importation circulaire
-    @log
-    def get_films_by_actor(self, actor) -> list[Film]:
-        """
-        Retourne les films dans lesquels joue un acteur.
-        Hypothèse : table casting(id_film, id_actor).
-        """
-        id_actor = getattr(actor, "id_actor", actor)
-
-        try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT f.id_film, f.titre, f.realisateur, f.genre
-                    FROM film f
-                    JOIN casting c ON c.id_film = f.id_film
-                    WHERE c.id_actor = %(id_actor)s
-                    ORDER BY f.titre ASC;
-                    """,
-                    {"id_actor": id_actor},
                 )
                 rows = cursor.fetchall()
         except Exception as e:
@@ -300,7 +300,7 @@ class FilmDAO(DAO):
         return [row["realisateur"] for row in res] if res else []
 
     @log
-    def list_id_film(self) -> list[str]:
+    def list_id(self) -> list[str]:
         """Retourne la liste des identifiants des films existants en base."""
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
@@ -428,3 +428,15 @@ class FilmDAO(DAO):
                     )
                 )
         return films
+
+    # -----------------------------
+    # UTILITAIRE
+    # -----------------------------
+    def _row_to_actor(self, row) -> Actor:
+        """
+        Transforme une ligne SQL en objet Actor.
+        """
+        return Actor(
+            nom=row["nom"],
+            prenom=row["prenom"],
+        )
