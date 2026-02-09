@@ -10,18 +10,17 @@ from app_errors import (
     InvalidPassWordError,
     UserAlreadyExistsError,
     UserNotFoundError,
-    UserPermissionError,
 )
-from business_object import Admin, Client, User
-from service import UserService
+from business_object import User
+from service.user_service import UserService
 
 
 @pytest.fixture
 def svc():
     """Fixture UserService avec DAO et utilitaires mockés."""
     service = UserService(user_dao=MagicMock())
-    service.user_dao = MagicMock()
-    service.PasswordProcessing = MagicMock()
+    service.session_manager = MagicMock()
+    service.current_session = None
     return service
 
 
@@ -82,12 +81,14 @@ def test_signup_bad_password(svc):
     user.email = "ok@ex.com"
     user.pseudo = "new"
     user._psswd = "weak"
-    fake_pp = MagicMock()
-    fake_pp.validate_password.return_value = False
-    svc.PasswordProcessing.return_value = fake_pp
     svc.user_dao.get_user_by_pseudo.return_value = None
     svc.user_dao.get_all_users.return_value = []
-    with pytest.raises(InvalidPassWordError):
+    fake_pp = MagicMock()
+    fake_pp.validate_password.return_value = False
+    with (
+        patch("service.user_service.PasswordProcessing", return_value=fake_pp),
+        pytest.raises(InvalidPassWordError),
+    ):
         svc.signup(user)
 
 
@@ -98,14 +99,16 @@ def test_signup_success(svc):
     user.pseudo = "new"
     user._psswd = "Strong!234"
     fake_pp = MagicMock()
-    fake_pp.validate_password.return_value = True
-    fake_pp._hash_password.return_value = b"hashed"
-    svc.PasswordProcessing.return_value = fake_pp
     svc.user_dao.get_user_by_pseudo.return_value = None
     svc.user_dao.get_all_users.return_value = []
     svc.user_dao.create.return_value = True
-    res = svc.signup(user)
-    assert res is user
+    fake_pp = MagicMock()
+    fake_pp.validate_password.return_value = True
+    fake_pp._hash_password.return_value = b"hashed"
+
+    with patch("service.user_service.PasswordProcessing", return_value=fake_pp):
+        res = svc.signup(user)
+        assert res is user
 
 
 def test_signup_creation_fail_raises(svc):
@@ -114,14 +117,17 @@ def test_signup_creation_fail_raises(svc):
     user.email = "ok@ex.com"
     user.pseudo = "new2"
     user._psswd = "Strong!234"
-    fake_pp = MagicMock()
-    fake_pp.validate_password.return_value = True
-    fake_pp._hash_password.return_value = b"hashed"
-    svc.PasswordProcessing.return_value = fake_pp
     svc.user_dao.get_user_by_pseudo.return_value = None
     svc.user_dao.get_all_users.return_value = []
     svc.user_dao.create.return_value = False
-    with pytest.raises(CreationError):
+    fake_pp = MagicMock()
+    fake_pp.validate_password.return_value = True
+    fake_pp._hash_password.return_value = b"hashed"
+
+    with (
+        patch("service.user_service.PasswordProcessing", return_value=fake_pp),
+        pytest.raises(CreationError),
+    ):
         svc.signup(user)
 
 
@@ -139,7 +145,7 @@ def test_login_bad_password(svc):
     svc.user_dao.get_user_by_pseudo.return_value = user_obj
     with (
         patch(
-            "service.user_services.PasswordProcessing._verify_password",
+            "service.user_service.PasswordProcessing._verify_password",
             return_value=False,
         ),
         pytest.raises(IncorrectPasswordError),
@@ -151,15 +157,13 @@ def test_login_success(svc):
     """Login réussi. Retourne l'utilisateur et crée la session."""
     user_obj = SimpleNamespace(pseudo="u", _psswd="anystring", role="client")
     svc.user_dao.get_user_by_pseudo.return_value = user_obj
-    with (
-        patch(
-            "service.user_services.PasswordProcessing._verify_password",
-            return_value=True,
-        ),
-        patch.object(svc.session_manager, "create_session") as mock_create,
+    fake_session = SimpleNamespace(user=user_obj, extend=lambda: None)
+
+    with patch(
+        "service.user_service.PasswordProcessing._verify_password",
+        return_value=True,
     ):
-        fake_session = SimpleNamespace(user=user_obj, extend=lambda: None)
-        mock_create.return_value = fake_session
+        svc.session_manager.create_session.return_value = fake_session
         res = svc.login("u", "pwd")
         assert res == user_obj
-    svc.user_activity_dao.log_action_safe.assert_called()
+        svc.session_manager.create_session.assert_called_once_with(user_obj)
