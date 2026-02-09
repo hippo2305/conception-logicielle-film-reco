@@ -14,7 +14,7 @@ class DBConnection(metaclass=Singleton):
     """
 
     def __init__(self):
-        dotenv.load_dotenv(override=True)
+        load_dotenv(override=True)
         # Open the connection.
         self.__connection = psycopg2.connect(
             host=os.environ["POSTGRES_HOST"],
