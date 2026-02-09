@@ -49,7 +49,6 @@ if __name__ == "__main__":
     print("\n=== FILM TMDB (FILTRÉ) ===")
     print("ID          :", film["id_film"])
     print("Titre       :", film["titre"])
-    print("Année       :", film["annee"])
     print("Réalisateur :", film["realisateur"])
     print("Genres      :", ", ".join(film["genres"]))
     print("Casting     :", ", ".join(film["casting"]))

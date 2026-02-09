@@ -8,7 +8,6 @@ class FilmDao:
         {
           "id_film": int,
           "titre": str,
-          "annee": int|None,
           "realisateur": str|None,
           "genres": [str, ...],
           "casting": [str, ...]

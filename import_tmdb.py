@@ -11,7 +11,6 @@ def main():
         "Inséré :",
         film["id_film"],
         film["titre"],
-        film["annee"],
         film["realisateur"],
         film["genres"],
         film["casting"],
