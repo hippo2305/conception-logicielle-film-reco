@@ -14,33 +14,14 @@ class DBConnection(metaclass=Singleton):
     """
 
     def __init__(self):
-        # Charge les variables d'environnement
-        load_dotenv()
-        load_dotenv(".env.local", override=True)
-
-        required_vars = [
-            "POSTGRES_HOST",
-            "POSTGRES_PORT",
-            "POSTGRES_DATABASE",
-            "POSTGRES_USER",
-            "POSTGRES_PASSWORD",
-            "POSTGRES_SCHEMA",
-        ]
-
-        missing = [v for v in required_vars if not os.getenv(v)]
-        if missing:
-            raise RuntimeError(
-                "Variables d'environnement manquantes pour la DB : "
-                + ", ".join(missing)
-            )
-
+        dotenv.load_dotenv(override=True)
+        # Open the connection.
         self.__connection = psycopg2.connect(
-            host=os.getenv("POSTGRES_HOST"),
-            port=int(os.getenv("POSTGRES_PORT")),
-            dbname=os.getenv("POSTGRES_DATABASE"),
-            user=os.getenv("POSTGRES_USER"),
-            password=os.getenv("POSTGRES_PASSWORD"),
-            options=f"-c search_path={os.getenv('POSTGRES_SCHEMA')}",
+            host=os.environ["POSTGRES_HOST"],
+            port=os.environ["POSTGRES_PORT"],
+            database=os.environ["POSTGRES_DATABASE"],
+            user=os.environ["POSTGRES_USER"],
+            password=os.environ["POSTGRES_PASSWORD"],
             cursor_factory=RealDictCursor,
         )
 
