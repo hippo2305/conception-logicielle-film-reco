@@ -89,10 +89,15 @@ class TmdbService:
 
         genres = [g.get("name") for g in details.get("genres", []) if g.get("name")]
 
+        # 📅 Année du film (API TMDB)
+        release_date = details.get("release_date")  # ex: "2010-07-16"
+        annee = int(release_date[:4]) if release_date else None
+
         return {
             "id_film": movie_id,
             "titre": details.get("title"),
             "realisateur": realisateur,
+            "annee": annee,
             "genres": genres,
             "casting": casting,
         }
