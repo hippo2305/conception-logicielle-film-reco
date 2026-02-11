@@ -61,7 +61,7 @@ class TmdbService:
         return response.json()
 
     # -----------------------------
-    # Film filtré : id, titre, realisateur, genres, casting
+    # Film filtré : id, titre, realisateur, annee, genres, casting
     # -----------------------------
     def get_movie_filtered(self, query: str, nb_acteurs: int = 5) -> dict:
         search = self.search_movie(query=query, page=1)

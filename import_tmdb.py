@@ -1,5 +1,5 @@
 from dao.init_db import init_db
-from service.service_film import FilmService
+from service.film_service import FilmService
 
 
 def main():
@@ -11,6 +11,7 @@ def main():
         "Inséré :",
         film["id_film"],
         film["titre"],
+        film["annee"],
         film["realisateur"],
         film["genres"],
         film["casting"],

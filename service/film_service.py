@@ -1,4 +1,4 @@
-from dao.dao_film import FilmDao
+from dao.film_dao import FilmDao
 from service.tmdb_service import TmdbService
 
 
