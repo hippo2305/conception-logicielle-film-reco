@@ -22,10 +22,6 @@ COPY main.py .
 COPY import_tmdb.py .
 COPY demo_add_from_csv.py .
 COPY README.md .
-COPY .env .
 
 # Lancer l'application
 CMD ["python", "main.py"]
-
-
-
