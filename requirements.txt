@@ -1,10 +1,7 @@
-dotenv
 python-dotenv
-psycopg2
 pytest
 pytest-cov
 requests
-datetime
 matplotlib
 pandas
 psycopg2-binary
@@ -16,5 +13,3 @@ plotly
 kaleido==0.2.1
 fastapi
 uvicorn
-logging
-logging.config
