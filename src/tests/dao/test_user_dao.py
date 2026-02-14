@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from business_object import User
-from dao.user_dao import UserDao
+from src.business_object import User
+from src.dao.user_dao import UserDao
 
 
 # ---------------------- FIXTURES ---------------------- #

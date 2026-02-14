@@ -1,9 +1,9 @@
 import logging
 
-from business_object.actor import Actor
-from dao.dao import DAO
-from dao.db_connection import DBConnection
-from utils.log_decorator import log
+from src.business_object.actor import Actor
+from src.dao.dao import DAO
+from src.dao.db_connection import DBConnection
+from src.utils.log_decorator import log
 
 
 class ActorDao(DAO):
