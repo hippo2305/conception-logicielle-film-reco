@@ -2,3 +2,9 @@
 dev = [
     "ruff>=0.14.13",
 ]
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+pythonpath = ["src"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

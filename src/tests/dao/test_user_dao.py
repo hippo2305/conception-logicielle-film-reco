@@ -26,7 +26,7 @@ def user_dao_with_mocks():
     mock_cursor.fetchone.return_value = None
 
     with (
-        patch("dao.user_dao.DBConnection") as mock_db_class,
+        patch("src.dao.user_dao.DBConnection") as mock_db_class,
     ):
         mock_db_instance = MagicMock()
         mock_db_instance.connection = mock_db_conn
