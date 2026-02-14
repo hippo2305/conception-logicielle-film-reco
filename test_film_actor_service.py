@@ -1,7 +1,7 @@
-from dao.dao import DAO
-from dao.film_dao import FilmDAO
-from service.actor_service import ActorService
-from service.film_service import FilmService
+from src.dao.dao import DAO
+from src.dao.film_dao import FilmDAO
+from src.service.actor_service import ActorService
+from src.service.film_service import FilmService
 
 
 DAO()._drop_table()
@@ -26,10 +26,7 @@ film1 = FilmService().instantiate_film(
     "science-fiction",
 )
 
-FilmService().add_casting(
-    film1,
-    [actor1, actor2, actor3, actor4, actor5]
-)
+FilmService().add_casting(film1, [actor1, actor2, actor3, actor4, actor5])
 
 FilmService().save_film(film1)
 
@@ -39,10 +36,7 @@ film2 = FilmService().instantiate_film(
     "science-fiction",
 )
 
-FilmService().add_casting(
-    film2,
-    [actor2, actor1, actor3, actor6, actor7]
-)
+FilmService().add_casting(film2, [actor2, actor1, actor3, actor6, actor7])
 
 FilmService().save_film(film2)
 
