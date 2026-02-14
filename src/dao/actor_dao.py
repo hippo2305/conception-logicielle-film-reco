@@ -1,10 +1,10 @@
 import logging
 
-from business_object.actor import Actor
-from business_object.film import Film
-from dao.dao import DAO
-from dao.db_connection import DBConnection
-from utils.log_decorator import log
+from src.business_object.actor import Actor
+from src.business_object.film import Film
+from src.dao.dao import DAO
+from src.dao.db_connection import DBConnection
+from src.utils.log_decorator import log
 
 
 class ActorDAO(DAO):
@@ -12,6 +12,7 @@ class ActorDAO(DAO):
     Cette classe permet d'interagir avec la table actor de la base de données.
     Elle gère l'ajout et la récupération des acteurs.
     """
+
     @log
     def exists(self, actor: Actor) -> bool:
         """
@@ -33,10 +34,7 @@ class ActorDAO(DAO):
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 cursor.execute(
                     "SELECT 1 FROM ACTOR WHERE nom = %(nom)s AND prenom = %(prenom)s;",
-                    {
-                        "nom": actor.nom,
-                        "prenom": actor.prenom
-                    },
+                    {"nom": actor.nom, "prenom": actor.prenom},
                 )
 
                 if cursor.fetchone() is None:
@@ -74,9 +72,7 @@ class ActorDAO(DAO):
         """
         try:
             if ActorDAO().exists(actor):
-                logging.info(
-                    f"L'acteur {actor.prenom} {actor.nom} existe déjà."
-                )
+                logging.info(f"L'acteur {actor.prenom} {actor.nom} existe déjà.")
                 return False
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 cursor.execute(
@@ -104,9 +100,7 @@ class ActorDAO(DAO):
     def get_id(self, actor: Actor) -> int:
         try:
             if not ActorDAO().exists(actor):
-                logging.info(
-                    f"L'acteur {actor.prenom} {actor.nom} n'existe pas."
-                )
+                logging.info(f"L'acteur {actor.prenom} {actor.nom} n'existe pas.")
                 return True
 
             with DBConnection().connection as connection, connection.cursor() as cursor:
@@ -118,10 +112,7 @@ class ActorDAO(DAO):
                         AND prenom = %(prenom)s
                     LIMIT 1;
                     """,
-                    {
-                        "nom": actor.nom,
-                        "prenom": actor.prenom
-                    }
+                    {"nom": actor.nom, "prenom": actor.prenom},
                 )
 
                 connection.commit()
@@ -155,9 +146,7 @@ class ActorDAO(DAO):
         try:
             # Vérifie si le film existe
             if not self.exists(actor):
-                logging.info(
-                    f"L'acteur {actor.prenom} {actor.nom} n'existe pas"
-                )
+                logging.info(f"L'acteur {actor.prenom} {actor.nom} n'existe pas")
                 return None
 
             # Récupère l'id de l'acteur

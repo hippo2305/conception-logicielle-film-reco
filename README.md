@@ -74,26 +74,6 @@ Ce compte permet d’accéder aux fonctionnalités réservées à l’administra
 
 **NB** : Vous ne devez jamais supprimer les comptes de tous les admins (il faut au moins en avoir un).
 
-# Structure du projet
-
-    conception-logicielle-film-reco/
-    │── data/
-    │   ├── /
-    │
-    ├── business_object/
-    ├── client/
-    ├── dao/
-    ├── services/
-    ├── utils/
-    ├── app_errors/
-    ├── tests/
-    ├── api/
-    │
-    │── main.py
-    │── setup.py
-    │── requirements.txt
-    │── README.md
-
 # Commande supplémentaire utile (si soucis de package)
 
 ``` bash

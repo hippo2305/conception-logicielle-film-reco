@@ -1,7 +1,7 @@
 import os
 import re
 
-from app_errors import (
+from src.app_errors import (
     CreationError,
     IncorrectPasswordError,
     InvalidInputError,
@@ -11,9 +11,9 @@ from app_errors import (
     UserNotFoundError,
     UserPermissionError,
 )
-from business_object import Admin, Client, User
-from dao.user_dao import UserDao
-from utils.psswd_proc import PasswordProcessing
+from src.business_object import Admin, Client, User
+from src.dao.user_dao import UserDao
+from src.utils.psswd_proc import PasswordProcessing
 
 
 class UserService:

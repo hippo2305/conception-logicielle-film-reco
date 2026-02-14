@@ -17,13 +17,8 @@ class Actor:
 
     def __str__(self):
         """Affichage lisible d'un acteur"""
-        return (
-            f"Actor(nom='{self.nom}', "
-            f"prenom='{self.prenom}')"
-        )
+        return f"Actor(nom='{self.nom}', prenom='{self.prenom}')"
 
     def description(self):
         """Description textuelle de l'acteur"""
-        return (
-            f"{self.prenom} {self.nom}"
-        )
+        return f"{self.prenom} {self.nom}"

@@ -1,18 +1,19 @@
 import logging
 
-from business_object.actor import Actor
-from business_object.film import Film
-from dao.actor_dao import ActorDAO
-from dao.dao import DAO
-from dao.db_connection import DBConnection
-from utils.log_decorator import log
+from src.business_object.actor import Actor
+from src.business_object.film import Film
+from src.dao.actor_dao import ActorDAO
+from src.dao.dao import DAO
+from src.dao.db_connection import DBConnection
+from src.utils.log_decorator import log
 
 
 class FilmDAO(DAO):
     """
-        Cette classe permet d'intéragir essentiellement avec la table film de la base de
-        données. Dispose de méthodes pour ajouter et retourner des films selon des filtres.
+    Cette classe permet d'intéragir essentiellement avec la table film de la base de
+    données. Dispose de méthodes pour ajouter et retourner des films selon des filtres.
     """
+
     @log
     def exists(self, film: Film) -> bool:
         """
@@ -35,10 +36,7 @@ class FilmDAO(DAO):
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 cursor.execute(
                     "SELECT 1 FROM FILM WHERE titre = %(titre)s AND realisateur = %(realisateur)s;",
-                    {
-                        "titre": film.titre,
-                        "realisateur": film.realisateur
-                    },
+                    {"titre": film.titre, "realisateur": film.realisateur},
                 )
 
                 if cursor.fetchone() is None:
@@ -75,9 +73,7 @@ class FilmDAO(DAO):
         try:
             # Vérifie si le film existe déjà
             if self.exists(film):
-                logging.info(
-                    f"Le film {film.titre} existe déjà."
-                )
+                logging.info(f"Le film {film.titre} existe déjà.")
                 return False
 
             # Insertion du film
@@ -118,7 +114,10 @@ class FilmDAO(DAO):
                     id_actor = ActorDAO().get_id(actor)
 
                     # Insertion dans la table d'association
-                    with DBConnection().connection as connection, connection.cursor() as cursor:
+                    with (
+                        DBConnection().connection as connection,
+                        connection.cursor() as cursor,
+                    ):
                         # /!\ À AJOUTER : vérification que l'association n'existe pas déjà
 
                         cursor.execute(
@@ -126,18 +125,13 @@ class FilmDAO(DAO):
                             INSERT INTO CASTING (id_film, id_actor)
                             VALUES (%(id_film)s, %(id_actor)s)
                             """,
-                            {
-                                "id_film": id_film,
-                                "id_actor": id_actor
-                            }
+                            {"id_film": id_film, "id_actor": id_actor},
                         )
                         connection.commit()
                 return True
 
             else:
-                logging.info(
-                    f"Le casting du film {film.titre} n'est pas renseigné."
-                )
+                logging.info(f"Le casting du film {film.titre} n'est pas renseigné.")
 
         except Exception as e:
             logging.error(f"Erreur lors de l'ajout du casting' : {e}")
@@ -151,26 +145,24 @@ class FilmDAO(DAO):
         try:
             # Vérifie si le film existe
             if not self.exists(film):
-                logging.info(
-                    f"Le film {film.titre} n'existe pas"
-                )
+                logging.info(f"Le film {film.titre} n'existe pas")
                 return None
 
             # Récupération de l'id
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 cursor.execute(
-                                """
+                    """
                                     SELECT id_film
                                     FROM FILM
                                     WHERE titre = %(titre)s
                                         AND realisateur = %(realisateur)s
                                     LIMIT 1;
                                 """,
-                                {
-                                    "titre": film.titre,
-                                    "realisateur": film.realisateur,
-                                }
-                            )
+                    {
+                        "titre": film.titre,
+                        "realisateur": film.realisateur,
+                    },
+                )
 
                 connection.commit()
                 return cursor.fetchone()["id_film"]
@@ -212,9 +204,7 @@ class FilmDAO(DAO):
         try:
             # Vérifie si le film existe
             if not self.exists(film):
-                logging.info(
-                    f"Le film {film.titre} n'existe pas"
-                )
+                logging.info(f"Le film {film.titre} n'existe pas")
                 return None
 
             # Récupère l'id du film
@@ -291,7 +281,9 @@ class FilmDAO(DAO):
         """Retourne la liste des réalisateurs enregistrés en base."""
         try:
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute("SELECT DISTINCT UPPER(realisateur) AS realisateur FROM FILM;")
+                cursor.execute(
+                    "SELECT DISTINCT UPPER(realisateur) AS realisateur FROM FILM;"
+                )
                 res = cursor.fetchall()
         except Exception as e:
             logging.info(e)

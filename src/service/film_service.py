@@ -1,6 +1,6 @@
-from business_object.actor import Actor
-from business_object.film import Film
-from dao.film_dao import FilmDAO
+from src.business_object.actor import Actor
+from src.business_object.film import Film
+from src.dao.film_dao import FilmDAO
 
 
 class FilmService:
