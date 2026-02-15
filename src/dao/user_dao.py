@@ -17,34 +17,20 @@ class UserDao:
     ---------
     db_conn : connexion
         Connexion active à la base de données PostgreSQL/MySQL
-    logger : Logger
-        Instance du logger pour enregistrer les erreurs
     """
 
     def __init__(self):
         """
         Initialise le DAO des utilisateurs.
 
-        Établit la connexion à la base de données et initialise le logger.
-        Cette méthode est appelée automatiquement lors de la création d'une
-        instance de UserDao.
-
-        Raises
-        ------
-        Exception
-            Si la connexion à la base de données échoue
         """
         self.db_conn = DBConnection().connection
-        self.logger = Logger()
 
     def create(self, user: User, role: str = "client") -> bool:
         """
-        Insère un nouvel utilisateur dans la table 'USER'.
+        Insère un nouvel utilisateur dans la table 'users'.
         """
-        sql = (
-            "INSERT INTO USER (pseudo, email, listfilms, password, role, "
-            "creation_date) VALUES (%s, %s, %s, %s, %s);"
-        )
+        sql = "INSERT INTO users (pseudo, email,  password, listfilms,role) VALUES (%s, %s, %s, %s, %s);"
 
         values = (
             user.pseudo,
@@ -87,7 +73,7 @@ class UserDao:
         se faire dans le Service avec une fonction de vérification de hash.
 
         """
-        sql = "SELECT * FROM USER WHERE pseudo = %s;"
+        sql = "SELECT * FROM users WHERE pseudo = %s;"
         values = (pseudo,)
 
         try:
@@ -124,7 +110,7 @@ class UserDao:
         nécessiter une vérification par email dans un cas réel.
 
         """
-        sql = "UPDATE USER SET email = %s WHERE pseudo = %s;"
+        sql = "UPDATE users SET email = %s WHERE pseudo = %s;"
         values = (new_email, pseudo)
         try:
             with self.db_conn.cursor() as cursor:
@@ -142,7 +128,7 @@ class UserDao:
         Le mot de passe fourni DOIT déjà être hashé.
 
         """
-        sql = "UPDATE USER SET password = %s WHERE pseudo = %s;"
+        sql = "UPDATE users SET password = %s WHERE pseudo = %s;"
         values = (new_psswd, pseudo)
         try:
             with self.db_conn.cursor() as cursor:
@@ -158,7 +144,7 @@ class UserDao:
         """
         Supprime définitivement un utilisateur de la base de données.
         """
-        sql = "DELETE FROM USER WHERE pseudo = %s;"
+        sql = "DELETE FROM users WHERE pseudo = %s;"
         values = (pseudo,)
 
         try:
@@ -170,76 +156,57 @@ class UserDao:
             self.db_conn.rollback()
             return False
 
-    def get_all_users(self) -> List[User] | None:
+    def get_all_users(self) -> list[User]:
         """
         Récupère tous les utilisateurs de la base de données.
         """
-        sql = "SELECT * FROM USER;"
+        sql = "SELECT * FROM users;"
         try:
             with self.db_conn.cursor() as cursor:
                 cursor.execute(sql)
                 res = cursor.fetchall()
                 if not res:
-                    return None
-
+                    return []
                 users = []
                 for row in res:
-                    if row["role"] == "admin":
-                        user = Admin(
-                            pseudo=res["pseudo"],
-                            email=res["email"],
-                            psswd=res["password"],
-                            listfilms=res["listfilms"],
-                            role=res["role"],
-                        )
-                    else:
-                        user = Client(
-                            pseudo=res["pseudo"],
-                            email=res["email"],
-                            psswd=res["password"],
-                            listfilms=res["listfilms"],
-                            role=res["role"],
-                        )
+                    user = User(
+                        pseudo=row["pseudo"],
+                        email=row["email"],
+                        psswd=row["password"],
+                        listfilms=row["listfilms"] if row["listfilms"] else [],
+                    )
                     users.append(user)
                 return users
-
-        except Exception as e:
-            self.db_conn.rollback()
-            self.logger.error(f"Erreur lors de la récupération des utilisateurs : {e}")
-            return None
+        except Exception:
+            return []
+                    return None
 
     def get_user_by_pseudo(self, pseudo: str) -> User | None:
         """
         Récupère un utilisateur spécifique par son pseudo.
         """
-        sql = "SELECT * FROM USER WHERE pseudo = %s;"
+        sql = "SELECT * FROM users WHERE pseudo = %s;"
         values = (pseudo,)
-
         try:
             with self.db_conn.cursor() as cursor:
                 cursor.execute(sql, values)
                 res = cursor.fetchone()
                 if not res:
                     return None
-
+                listfilms = res["listfilms"] if res["listfilms"] else []
                 if res["role"] == "client":
                     return Client(
                         pseudo=res["pseudo"],
                         email=res["email"],
                         psswd=res["password"],
-                        listfilms=res["listfilms"],
-                        role=res["role"],
+                        listfilms=listfilms,
                     )
                 else:
                     return Admin(
                         pseudo=res["pseudo"],
                         email=res["email"],
                         psswd=res["password"],
-                        listfilms=res["listfilms"],
-                        role=res["role"],
+                        listfilms=listfilms,
                     )
-
-        except Exception as e:
-            self.db_conn.rollback()
-            self.logger.error(f"Erreur lors de la récupération de l'utilisateur : {e}")
+        except Exception:
             return None

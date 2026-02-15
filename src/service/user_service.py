@@ -13,6 +13,7 @@ from src.app_errors import (
 )
 from src.business_object import Admin, Client, User
 from src.dao.user_dao import UserDao
+from src.service.session_manager import SessionManager
 from src.utils.psswd_proc import PasswordProcessing
 
 
@@ -27,6 +28,8 @@ class UserService:
         user_dao: UserDao = None,
     ):
         self.user_dao: UserDao = user_dao if user_dao else UserDao()
+        self.session_manager: SessionManager = SessionManager()
+        self.current_session = None
 
     @staticmethod
     def validate_email(email: str):
@@ -64,7 +67,7 @@ class UserService:
             message = (
                 "Le mot de passe entré est invalide.\n"
                 "Il doit contenir une majuscule, un caractère spécial, \n"
-                f"et faire au moins {os.environ['PASSWORD_LENGTH']}"
+                "et faire au moins 8 caractères."
             )
             raise InvalidPassWordError(message)
 
@@ -74,12 +77,6 @@ class UserService:
         #  on essaie de créer l'utilisateur avec la méthode create du DAO
         user_created = self.user_dao.create(user=user, role=role)
         if user_created:
-            self.user_activity_dao.log_action_safe(
-                pseudo=user.pseudo,
-                action="account creation",
-                entity="user_account",
-                user_dao=self.user_dao,
-            )
             return user
         else:
             message = "Échec de la création de l'utilisateur."
@@ -102,7 +99,6 @@ class UserService:
             raise IncorrectPasswordError(message)
 
         self.current_session = self.session_manager.create_session(user)
-        self.current_session.extend()  # TTL reset
 
         return user
 
@@ -116,9 +112,6 @@ class UserService:
         # On ferme la session courante
         self.session_manager.logout(pseudo)
         self.current_session = None
-
-        self.logger.info(f"Utilisateur '{pseudo}' déconnecté avec succès.")
-        return True
 
     def change_user_role(self, pseudo: str, new_role: str = "") -> bool:
         """
@@ -141,12 +134,6 @@ class UserService:
             raise UserPermissionError(message)
 
         changed = self.user_dao.change_user_role(pseudo=pseudo, new_role=new_role)
-        self.user_activity_dao.log_action_safe(
-            pseudo=actor.pseudo,
-            action=f"changed or tried to change {concerned_user.pseudo} role",
-            entity="user_account",
-            user_dao=self.user_dao,
-        )
         return changed
 
     def change_user_email(self, pseudo: str, new_email: str) -> bool:
@@ -166,12 +153,6 @@ class UserService:
             try:
                 email_changed = self.user_dao.change_user_email(
                     pseudo=actor.pseudo, new_email=new_email
-                )
-                self.user_activity_dao.log_action_safe(
-                    pseudo=actor.pseudo,
-                    action="changed or tried to change own email",
-                    entity="user_account",
-                    user_dao=self.user_dao,
                 )
                 return email_changed
             except Exception as e:
@@ -194,12 +175,6 @@ class UserService:
             try:
                 email_changed = self.user_dao.change_user_email(
                     pseudo=pseudo, new_email=new_email
-                )
-                self.user_activity_dao.log_action_safe(
-                    pseudo=actor.pseudo,
-                    action="changed or tried to change own email",
-                    entity="user_account",
-                    user_dao=self.user_dao,
                 )
                 return email_changed
             except Exception as e:
@@ -236,12 +211,6 @@ class UserService:
         new_psswd = password_processor._hash_password().decode("utf-8")
         if actor.pseudo == pseudo:
             changed = self.user_dao.change_mdp(pseudo=pseudo, new_psswd=new_psswd)
-            self.user_activity_dao.log_action_safe(
-                pseudo=actor.pseudo,
-                action="changed own password",
-                entity="user_account",
-                user_dao=self.user_dao,
-            )
             return changed
 
         if actor.role != "admin":
@@ -259,13 +228,6 @@ class UserService:
             )
 
         changed = self.user_dao.change_mdp(pseudo=pseudo, new_psswd=new_psswd)
-
-        self.user_activity_dao.log_action_safe(
-            pseudo=actor.pseudo,
-            action=f"changed {concerned_user.pseudo} password",
-            entity="user_account",
-            user_dao=self.user_dao,
-        )
 
         return changed
 
