@@ -44,11 +44,12 @@ class MAIN:
 
 if __name__ == "__main__":
     tmdb = TmdbService()
-    film = tmdb.get_movie_filtered("Titanic", 5)
+    film = tmdb.get_movie_filtered("Les bronzés", 5)
 
     print("\n=== FILM TMDB (FILTRÉ) ===")
     print("ID          :", film["id_film"])
     print("Titre       :", film["titre"])
+    print("Année      :", film["annee"])
     print("Réalisateur :", film["realisateur"])
     print("Genres      :", ", ".join(film["genres"]))
     print("Casting     :", ", ".join(film["casting"]))

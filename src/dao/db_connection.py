@@ -1,3 +1,6 @@
+from contextlib import contextmanager
+import sqlite3
+
 import os
 
 from dotenv import load_dotenv
@@ -6,6 +9,22 @@ from psycopg2.extras import RealDictCursor
 
 from src.utils.singleton import Singleton
 
+
+DB_PATH = "data/local.db"
+
+
+@contextmanager
+def get_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+        conn.commit()
+    except:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 class DBConnection(metaclass=Singleton):
     """
