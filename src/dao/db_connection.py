@@ -1,7 +1,6 @@
 from contextlib import contextmanager
-import sqlite3
-
 import os
+import sqlite3
 
 from dotenv import load_dotenv
 import psycopg2
@@ -35,14 +34,17 @@ class DBConnection(metaclass=Singleton):
     def __init__(self):
         load_dotenv(override=True)
         # Open the connection.
-        self.__connection = psycopg2.connect(
-            host=os.environ["POSTGRES_HOST"],
-            port=os.environ["POSTGRES_PORT"],
-            database=os.environ["POSTGRES_DATABASE"],
-            user=os.environ["POSTGRES_USER"],
-            password=os.environ["POSTGRES_PASSWORD"],
-            cursor_factory=RealDictCursor,
-        )
+        if os.environ["POSTGRES"] == "False":
+            self.__connection = get_connection()
+        else:
+            self.__connection = psycopg2.connect(
+                host=os.environ["POSTGRES_HOST"],
+                port=os.environ["POSTGRES_PORT"],
+                database=os.environ["POSTGRES_DATABASE"],
+                user=os.environ["POSTGRES_USER"],
+                password=os.environ["POSTGRES_PASSWORD"],
+                cursor_factory=RealDictCursor,
+            )
 
     @property
     def connection(self):

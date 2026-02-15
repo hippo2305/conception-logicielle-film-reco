@@ -4,7 +4,7 @@ from src.business_object.actor import Actor
 from src.business_object.film import Film
 from src.dao.actor_dao import ActorDAO
 from src.dao.dao import DAO
-from src.dao.db_connection import DBConnection, get_connection
+from src.dao.db_connection import DBConnection
 from src.utils.log_decorator import log
 
 
@@ -28,8 +28,7 @@ class FilmDAO(DAO):
         genres_str = ", ".join(film.get("genres", []))
         annee = film.get("annee")
 
-        with get_connection() as conn:
-            cur = conn.cursor()
+        with DBConnection().connection as connection, connection.cursor() as cur:
 
             # 1) film (UPSERT)
             cur.execute(
@@ -85,7 +84,8 @@ class FilmDAO(DAO):
                     ON CONFLICT(id_film, id_actor) DO NOTHING
                     """,
                     (film["id_film"], id_actor),
-                  
+                )
+
     @log
     def exists(self, film: Film) -> bool:
         """

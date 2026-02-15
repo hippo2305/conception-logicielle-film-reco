@@ -1,7 +1,7 @@
-from src.service.tmdb_service import TmdbService
 from src.business_object.actor import Actor
 from src.business_object.film import Film
 from src.dao.film_dao import FilmDAO
+from src.service.tmdb_service import TmdbService
 
 
 class FilmService:
@@ -11,7 +11,7 @@ class FilmService:
 
     def __init__(self):
         self.tmdb = TmdbService()
-        self.dao = FilmDao()
+        self.dao = FilmDAO()
 
     def import_from_tmdb(self, query: str, nb_acteurs: int = 5) -> dict:
         film = self.tmdb.get_movie_filtered(query=query, nb_acteurs=nb_acteurs)
