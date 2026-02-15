@@ -1,20 +1,58 @@
 import logging
 
 from src.business_object.actor import Actor
+from src.business_object.film import Film
 from src.dao.dao import DAO
 from src.dao.db_connection import DBConnection
 from src.utils.log_decorator import log
 
 
-class ActorDao(DAO):
+class ActorDAO(DAO):
     """
     Cette classe permet d'interagir avec la table actor de la base de données.
     Elle gère l'ajout et la récupération des acteurs.
     """
 
+    @log
+    def exists(self, actor: Actor) -> bool:
+        """
+        Vérifie si un acteur existe déjà dans la base
+
+        Paramètres
+        ----------
+        actor : Actor
+            Objet Actor contenant :
+            - nom
+            - prenom
+
+        Retour
+        ------
+        bool
+            True si l'acteur est déjà présent, False sinon
+        """
+        try:
+            with DBConnection().connection as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT 1 FROM ACTOR WHERE nom = %(nom)s AND prenom = %(prenom)s;",
+                    {"nom": actor.nom, "prenom": actor.prenom},
+                )
+
+                if cursor.fetchone() is None:
+                    logging.info(
+                        f"L'acteur {actor.prenom} {actor.nom} n'est pas présent dans la base."
+                    )
+                    return False
+                else:
+                    return True
+
+        except Exception as e:
+            logging.error(f"Erreur lors de la recherche de l'acteur : {e}")
+            return False
+
     # -----------------------------
     # INSERTION
     # -----------------------------
+
     @log
     def add_actor(self, actor: Actor) -> bool:
         """
@@ -24,10 +62,8 @@ class ActorDao(DAO):
         ----------
         actor : Actor
             Objet Actor contenant :
-            - id_actor
             - nom
             - prenom
-            - age
 
         Retour
         ------
@@ -35,29 +71,18 @@ class ActorDao(DAO):
             True si insertion réussie, False sinon
         """
         try:
+            if ActorDAO().exists(actor):
+                logging.info(f"L'acteur {actor.prenom} {actor.nom} existe déjà.")
+                return False
             with DBConnection().connection as connection, connection.cursor() as cursor:
-                # Vérifie si l'acteur existe déjà
-                cursor.execute(
-                    "SELECT 1 FROM ACTOR WHERE id_actor = %(id_actor)s;",
-                    {"id_actor": actor.id_actor},
-                )
-
-                if cursor.fetchone() is not None:
-                    logging.info(
-                        f"L'acteur avec id_actor={actor.id_actor} existe déjà."
-                    )
-                    return False
-
                 cursor.execute(
                     """
-                    INSERT INTO ACTOR (id_actor, nom, prenom, age)
-                    VALUES (%(id_actor)s, %(nom)s, %(prenom)s, %(age)s);
+                    INSERT INTO ACTOR (nom, prenom)
+                    VALUES (%(nom)s, %(prenom)s);
                     """,
                     {
-                        "id_actor": actor.id_actor,
                         "nom": actor.nom,
                         "prenom": actor.prenom,
-                        "age": actor.age,
                     },
                 )
             connection.commit()
@@ -70,6 +95,33 @@ class ActorDao(DAO):
     # -----------------------------
     # LECTURE
     # -----------------------------
+
+    @log
+    def get_id(self, actor: Actor) -> int:
+        try:
+            if not ActorDAO().exists(actor):
+                logging.info(f"L'acteur {actor.prenom} {actor.nom} n'existe pas.")
+                return True
+
+            with DBConnection().connection as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id_actor
+                    FROM ACTOR
+                    WHERE nom = %(nom)s
+                        AND prenom = %(prenom)s
+                    LIMIT 1;
+                    """,
+                    {"nom": actor.nom, "prenom": actor.prenom},
+                )
+
+                connection.commit()
+                return cursor.fetchone()["id_actor"]
+
+        except Exception as e:
+            logging.error(f"Erreur lors de la récupération de l'id : {e}")
+            return None
+
     @log
     def get_all_actors(self) -> list[Actor]:
         """
@@ -79,50 +131,58 @@ class ActorDao(DAO):
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 cursor.execute("SELECT * FROM ACTOR;")
                 rows = cursor.fetchall()
+
         except Exception as e:
-            logging.info(e)
-            raise
+            logging.error(f"Erreur lors de la récupération des acteurs : {e}")
+            return None
 
         return [self._row_to_actor(row) for row in rows] if rows else []
 
     @log
-    def get_actor_by_film(self, film) -> list[Actor]:
+    def get_films(self, actor: Actor) -> list[Film]:
         """
-        Retourne les acteurs jouant dans un film donné.
-        Hypothèse : table de jointure casting(id_film, id_actor).
+        Récupère tous les films dans lesquel a joué un acteur
         """
-        id_film = getattr(film, "id_film", film)
-
         try:
+            # Vérifie si le film existe
+            if not self.exists(actor):
+                logging.info(f"L'acteur {actor.prenom} {actor.nom} n'existe pas")
+                return None
+
+            # Récupère l'id de l'acteur
+            id_actor = self.get_id(actor)
+
             with DBConnection().connection as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT a.id_actor, a.nom, a.prenom, a.age
-                    FROM actor a
-                    JOIN casting c ON c.id_actor = a.id_actor
-                    WHERE c.id_film = %(id_film)s
-                    ORDER BY a.nom ASC;
+                    SELECT f.id_film, f.titre, f.realisateur, f.genre
+                    FROM FILM f
+                    JOIN CASTING c ON c.id_film = f.id_film
+                    WHERE c.id_actor = %(id_actor)s
+                    ORDER BY f.titre ASC;
                     """,
-                    {"id_film": id_film},
+                    {"id_actor": id_actor},
                 )
+                connection.commit()
                 rows = cursor.fetchall()
-        except Exception as e:
-            logging.info(e)
-            raise
 
-        return [self._row_to_actor(row) for row in rows] if rows else []
+        except Exception as e:
+            logging.error(f"Erreur lors de la récupération du casting : {e}")
+            return None
+
+        return [self._row_to_film(row) for row in rows] if rows else None
 
     # -----------------------------
     # UTILITAIRE
     # -----------------------------
-    def _row_to_actor(self, row) -> Actor:
+    def _row_to_film(self, row) -> Film:
         """
-        Transforme une ligne SQL en objet Actor.
+        Transforme une ligne SQL en objet Film.
         """
-        return Actor(
-            id_actor=row["id_actor"],
-            nom=row["nom"],
-            prenom=row["prenom"],
-            age=row["age"],
-            films=[],
+        film = Film(
+            titre=row["titre"],
+            realisateur=row["realisateur"],
+            genre=row["genre"],
         )
+
+        return film

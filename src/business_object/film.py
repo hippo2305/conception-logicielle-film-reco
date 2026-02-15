@@ -14,7 +14,7 @@ class Film:
         Liste des acteurs du film
     """
 
-    def __init__(self, titre: str, realisateur: str, genre: str, casting: list):
+    def __init__(self, titre: str, realisateur: str, genre: str, casting=None):
         """Constructeur"""
         self.titre = titre
         self.realisateur = realisateur
@@ -23,12 +23,15 @@ class Film:
 
     def __str__(self):
         """Affichage lisible d'un film"""
-        return (
+        string = (
             f"Film(titre='{self.titre}', "
             f"réalisateur='{self.realisateur}', "
-            f"genre='{self.genre}', "
-            f"casting={len(self.casting)} acteurs)"
+            f"genre='{self.genre}'"
         )
+        if self.casting:
+            string += f", casting={len(self.casting)} acteurs"
+
+        return string + ")"
 
     def description(self):
         """Description textuelle du film"""

@@ -1,7 +1,7 @@
 import os
 import re
 
-from app_errors import (
+from src.app_errors import (
     CreationError,
     IncorrectPasswordError,
     InvalidInputError,
@@ -18,6 +18,11 @@ from src.utils.psswd_proc import PasswordProcessing
 
 
 class UserService:
+    """
+    Service métier pour gérer les utilisateurs et les données liées aux stations.
+    Utilise la session pour identifier l'utilisateur courant sans avoir à passer son pseudo.
+    """
+
     def __init__(
         self,
         user_dao: UserDao = None,

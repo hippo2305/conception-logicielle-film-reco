@@ -1,5 +1,8 @@
+from ast import List
+
 from src.business_object import Admin, Client, User
 from src.dao.db_connection import DBConnection
+from src.utils import Logger
 
 
 class UserDao:
@@ -42,8 +45,9 @@ class UserDao:
                 cursor.execute(sql, values)
             self.db_conn.commit()
             return True
-        except Exception:
+        except Exception as e:
             self.db_conn.rollback()
+            self.logger.error(f"Erreur lors de l'insertion : {e}")
             return False
 
     def login(self, pseudo: str):
@@ -95,8 +99,9 @@ class UserDao:
                             role=res["role"],
                         )
             return None
-        except Exception:
+        except Exception as e:
             self.db_conn.rollback()
+            self.logger.error(f"Erreur lors du login : {e}")
             return None
 
     def change_user_email(self, pseudo: str, new_email: str) -> bool:
@@ -112,7 +117,8 @@ class UserDao:
                 cursor.execute(sql, values)
                 self.db_conn.commit()
                 return cursor.rowcount > 0
-        except Exception:
+        except Exception as e:
+            self.logger.error(f"Erreur lors du changement d'email : {e}")
             self.db_conn.rollback()
             return False
 
@@ -129,7 +135,8 @@ class UserDao:
                 cursor.execute(sql, values)
                 self.db_conn.commit()
                 return cursor.rowcount > 0
-        except Exception:
+        except Exception as e:
+            self.logger.error(f"Erreur lors du changement du mot de passe : {e}")
             self.db_conn.rollback()
             return False
 
@@ -172,6 +179,7 @@ class UserDao:
                 return users
         except Exception:
             return []
+                    return None
 
     def get_user_by_pseudo(self, pseudo: str) -> User | None:
         """

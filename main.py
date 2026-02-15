@@ -2,44 +2,54 @@ import os
 
 from dotenv import load_dotenv
 
+from service.tmdb_service import TmdbService
+
 
 class MAIN:
-    def load_env():
-        # Charge le fichier principal
+    @staticmethod
+    def load_env() -> None:
         load_dotenv()
-        # Charge un fichier local si présent
-        local_env_path = ".env.local"
-
+        local_env_path = ".env"
         if os.path.exists(local_env_path):
             load_dotenv(dotenv_path=local_env_path, override=True)
 
-    def get_local_env():
-        local_env_path = ".env.local"
-
+    @staticmethod
+    def get_local_env(mask_secrets: bool = True) -> dict[str, str]:
+        # Charge aussi .env.local si présent
+        local_env_path = ".env"
         if os.path.exists(local_env_path):
             load_dotenv(dotenv_path=local_env_path)
 
-        keyword_mask = [
-            "password",
-            "pwd",
-            "jeton",
-            "token",
-            "secret",
-            "key",
-            "cle",
-            "mdp",
-            "motdepasse",
-        ]
+        env = dict(os.environ)
 
-        for key, value in os.environ.items():
-            if any(mask in key.lower() for mask in keyword_mask):
-                print(f"{key}=", end="")
-                for _i in range(len(key)):
-                    print("*", end="")
-                print("")
-            else:
-                print(f"{key}={value}")
+        if mask_secrets:
+            keyword_mask = [
+                "password",
+                "pwd",
+                "jeton",
+                "token",
+                "bearer",
+                "secret",
+                "key",
+                "cle",
+                "mdp",
+                "motdepasse",
+            ]
+            for k in list(env.keys()):
+                if any(m in k.lower() for m in keyword_mask):
+                    env[k] = "*" * len(k)  # masque simple
+
+        return env
 
 
 if __name__ == "__main__":
-    print(MAIN.get_local_env())
+    tmdb = TmdbService()
+    film = tmdb.get_movie_filtered("Titanic", 5)
+
+    print("\n=== FILM TMDB (FILTRÉ) ===")
+    print("ID          :", film["id_film"])
+    print("Titre       :", film["titre"])
+    print("Réalisateur :", film["realisateur"])
+    print("Genres      :", ", ".join(film["genres"]))
+    print("Casting     :", ", ".join(film["casting"]))
+    print("==========================\n")

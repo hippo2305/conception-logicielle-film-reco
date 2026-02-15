@@ -1,6 +1,6 @@
 from src.business_object.actor import Actor
 from src.business_object.film import Film
-from src.dao.film_dao import FilmDao
+from src.dao.film_dao import FilmDAO
 
 
 class FilmService:
@@ -9,14 +9,13 @@ class FilmService:
     """
 
     def __init__(self):
-        self._film_dao = FilmDao()
+        self._film_dao = FilmDAO()
 
     # -----------------------------
     # Instanciation
     # -----------------------------
     def instantiate_film(
         self,
-        id_film: int,
         titre: str,
         realisateur: str,
         genre: str,
@@ -25,7 +24,6 @@ class FilmService:
         Crée et retourne un objet Film.
         """
         return Film(
-            id_film=id_film,
             titre=titre,
             realisateur=realisateur,
             genre=genre,
@@ -34,14 +32,19 @@ class FilmService:
     # -----------------------------
     # Casting
     # -----------------------------
-    def add_casting(self, film: Film, actor: Actor) -> bool:
+    def add_casting(self, film: Film, casting: list[Actor]) -> bool:
         """
-        Ajoute un acteur au casting d’un film.
+        Ajoute le casting aux attributs d'un film.
         """
-        if actor not in film.casting:
-            film.casting.append(actor)
-            return True
-        return False
+        if not film.casting:
+            film.casting = []
+
+        for actor in casting:
+            if actor not in film.casting:
+                film.casting.append(actor)
+            else:
+                return False
+        return True
 
     def get_casting(self, film: Film) -> list[Actor]:
         """
@@ -56,4 +59,9 @@ class FilmService:
         """
         Sauvegarde le film en base de données.
         """
-        return self._film_dao.add_film(film)
+        self._film_dao.add_film(film)
+
+        if film.casting:
+            self._film_dao.add_casting(film)
+
+        return True
