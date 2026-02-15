@@ -1,7 +1,7 @@
 import sqlite3
 
 
-DB_PATH = "app.db"
+DB_PATH = "data/local.db"
 
 
 def init_db():

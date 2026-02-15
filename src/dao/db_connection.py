@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import sqlite3
 
 
-DB_PATH = "app.db"
+DB_PATH = "data/local.db"
 
 
 @contextmanager
