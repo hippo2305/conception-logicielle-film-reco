@@ -4,17 +4,13 @@ psycopg2
 pytest
 pytest-cov
 requests
-datetime
-matplotlib
 pandas
 psycopg2-binary
 InquirerPy
 tqdm
 geopy
 tabulate
-plotly
 kaleido==0.2.1
-fastapi
 uvicorn
 logging
 logging.config

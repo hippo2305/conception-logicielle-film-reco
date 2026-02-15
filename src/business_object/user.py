@@ -10,7 +10,7 @@ class User:
         L'adresse email de l'utilisateur.
     psswd : str
         Le mot de passe de l'utilisateur (hashé dans la couche service).
-    listfilms : list[films]
+    listfilms : list[film]
         La liste des films déjà vus
     """
 
@@ -28,7 +28,7 @@ class User:
         if not isinstance(psswd, str):
             raise TypeError("Le mot de passe doit être une chaîne de caractères.")
         if not isinstance(listfilms, list):
-            raise TypeError("Le paramètre is_active doit être un booléen.")
+            raise TypeError("Le paramètre listfilms doit être une liste.")
 
         if not pseudo.strip():
             raise ValueError("Le pseudo ne peut pas être vide.")
@@ -43,6 +43,11 @@ class User:
         self.email = email.strip().lower()
         self._psswd = psswd
         self.listfilms = listfilms
+
+    @property
+    def psswd(self):
+        """Retourne le mot de passe."""
+        return self._psswd
 
     def __str__(self) -> str:
         """
