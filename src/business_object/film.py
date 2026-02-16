@@ -8,16 +8,19 @@ class Film:
         Titre du film
     realisateur : str
         Réalisateur du film
+    annee : str
+        Année de sortie du film
     genre : str
         Genre du film
     casting : list[Actor]
         Liste des acteurs du film
     """
 
-    def __init__(self, titre: str, realisateur: str, genre: str, casting=None):
+    def __init__(self, titre: str, realisateur: str, annee: int, genre: str, casting=None):
         """Constructeur"""
         self.titre = titre
         self.realisateur = realisateur
+        self.annee = annee
         self.genre = genre
         self.casting = casting
 

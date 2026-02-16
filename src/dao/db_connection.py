@@ -4,7 +4,6 @@ import sqlite3
 
 from dotenv import load_dotenv
 import psycopg2
-from psycopg2.extras import RealDictCursor
 
 from utils.singleton import Singleton
 
@@ -41,7 +40,6 @@ class DBConnection(metaclass=Singleton):
             database=os.environ["POSTGRES_DATABASE"],
             user=os.environ["POSTGRES_USER"],
             password=os.environ["POSTGRES_PASSWORD"],
-            cursor_factory=RealDictCursor,
         )
 
 

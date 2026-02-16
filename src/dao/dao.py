@@ -50,13 +50,13 @@ class DAO:
             """)
 
         if self.postgres():
-            with LocalDBConnection().get_connection() as connection, connection.cursor() as cursor:
-                cursor.executescript(query)
+            with DBConnection().connection as connection, connection.cursor() as cursor:
+                cursor.execute(query)
                 connection.commit()
         else:
             with LocalDBConnection().get_connection() as connection:
                 cursor = connection.cursor()
-                cursor.executescript(query)
+                cursor.executescript(query.replace("SERIAL", "INTEGER"))
                 connection.commit()
 
     def postgres(self):
@@ -68,8 +68,10 @@ class DAO:
         else:
             raise Exception("La variable d'environnement POSTGRES n'accepte que deux valeurs : True et False")
 
-    def select_query(self, tablename, var = "*", where = None, other = None, multiple = False):
+    def select_query(self, tablename, var = "*", join = None, where = None, other = None, multiple = False):
         query = f"SELECT {var} FROM {tablename}"
+        if join:
+            query += f" JOIN {join}"
         if where:
             query += f" WHERE {where}"
         if other:

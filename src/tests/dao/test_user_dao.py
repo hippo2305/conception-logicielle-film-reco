@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.business_object import User
-from src.dao.user_dao import UserDao
+from business_object import User
+from dao.user_dao import UserDao
 
 
 # ---------------------- FIXTURES ---------------------- #
@@ -26,7 +26,7 @@ def user_dao_with_mocks():
     mock_cursor.fetchone.return_value = None
 
     with (
-        patch("src.dao.user_dao.DBConnection") as mock_db_class,
+        patch("dao.user_dao.DBConnection") as mock_db_class,
     ):
         mock_db_instance = MagicMock()
         mock_db_instance.connection = mock_db_conn

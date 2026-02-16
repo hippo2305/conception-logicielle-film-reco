@@ -1,5 +1,5 @@
-from src.business_object.user import User
-from src.service.session import Session
+from business_object.user import User
+from service.session import Session
 
 
 class SessionManager:

@@ -1,7 +1,14 @@
+from business_object.actor import Actor
+from dao.actor_dao import ActorDAO
 from dao.dao import DAO
 
 
-DAO()._del_data_table()
+DAO()._drop_table()
 
-DAO().insert_query("ACTOR", "nom, prenom", "'Dicaprio', 'Leonardo'")
-print(DAO().select_query("ACTOR"))
+test_actor1 = Actor("Dicaprio", "Leonardo")
+test_actor2 = Actor("Cruise", "Tom")
+
+ActorDAO().add_actor(test_actor1)
+ActorDAO().add_actor(test_actor2)
+
+print(ActorDAO().get_all_actors()[1])
