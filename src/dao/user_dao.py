@@ -1,8 +1,8 @@
 from ast import List
 
-from src.business_object import Admin, Client, User
-from src.dao.db_connection import DBConnection
-from src.utils import Logger
+from business_object import Admin, Client, User
+from dao.db_connection import DBConnection
+from utils import Logger
 
 
 class UserDao:

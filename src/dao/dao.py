@@ -1,4 +1,4 @@
-from src.dao.db_connection import DBConnection
+from dao.db_connection import DBConnection
 
 
 class DAO:

@@ -2,7 +2,7 @@ import uuid
 
 import dotenv
 
-from src.business_object.user import User
+from business_object.user import User
 
 
 dotenv.load_dotenv()

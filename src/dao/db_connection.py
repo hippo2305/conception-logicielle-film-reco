@@ -1,13 +1,12 @@
 from contextlib import contextmanager
-import sqlite3
-
 import os
+import sqlite3
 
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from src.utils.singleton import Singleton
+from utils.singleton import Singleton
 
 
 DB_PATH = "data/local.db"

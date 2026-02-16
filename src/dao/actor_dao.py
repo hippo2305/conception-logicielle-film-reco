@@ -1,10 +1,10 @@
 import logging
 
-from src.business_object.actor import Actor
-from src.business_object.film import Film
-from src.dao.dao import DAO
-from src.dao.db_connection import DBConnection
-from src.utils.log_decorator import log
+from business_object.actor import Actor
+from business_object.film import Film
+from dao.dao import DAO
+from dao.db_connection import DBConnection
+from utils.log_decorator import log
 
 
 class ActorDAO(DAO):
