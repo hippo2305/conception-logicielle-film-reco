@@ -41,6 +41,7 @@ select = [
 # Règles ignorées
 ignore = [
     "E501", # Longueur de ligne (gérée par le formatter)
+    "N999", # Nom de module invalide (nom du dossier projet avec '-')
 ]
 
 [lint.isort]
