@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from service.tmdb_service import TmdbService
 
 
-app = FastAPI(root_path="/proxy/5000", title="FuelTrack API")
+app = FastAPI(root_path="/proxy/5000", title="MovieReco API")
 
 
 @app.get("/", include_in_schema=False)

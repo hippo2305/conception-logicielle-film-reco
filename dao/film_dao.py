@@ -2,9 +2,17 @@ from dao.db_connection import get_connection
 
 
 class FilmDao:
+    """
+    Data Access Object for films.
+    Handles persistence and retrieval of film data.
+    """
+
+    # -----------------------------
+    # INSERT / UPDATE
+    # -----------------------------
     def insert_film(self, film: dict) -> None:
         """
-        film dict attendu:
+        Expected film dict:
         {
           "id_film": int,
           "titre": str,
@@ -20,7 +28,7 @@ class FilmDao:
         with get_connection() as conn:
             cur = conn.cursor()
 
-            # 1) film (UPSERT)
+            # 1) Film (UPSERT)
             cur.execute(
                 """
                 INSERT INTO film (id_film, titre, annee, realisateur, genre)
@@ -40,12 +48,12 @@ class FilmDao:
                 ),
             )
 
-            # 2) acteurs + liaison casting
+            # 2) Actors + casting relation
             for nom in film.get("casting", []):
                 if not nom:
                     continue
 
-                # Insert actor si n'existe pas
+                # Insert actor if not exists
                 cur.execute(
                     """
                     INSERT INTO actor (nom)
@@ -55,7 +63,7 @@ class FilmDao:
                     (nom,),
                 )
 
-                # Récupérer id_actor
+                # Retrieve actor ID
                 cur.execute(
                     "SELECT id_actor FROM actor WHERE nom = ?",
                     (nom,),
@@ -66,7 +74,7 @@ class FilmDao:
 
                 id_actor = row["id_actor"]
 
-                # Insert lien casting
+                # Insert casting link
                 cur.execute(
                     """
                     INSERT INTO casting (id_film, id_actor)
@@ -75,3 +83,55 @@ class FilmDao:
                     """,
                     (film["id_film"], id_actor),
                 )
+
+    # -----------------------------
+    # READ
+    # -----------------------------
+    def get_film(self, film_id: int) -> dict | None:
+        """
+        Retrieve a film by its ID.
+        """
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT * FROM film WHERE id_film = ?",
+                (film_id,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_film_by_title(self, title: str) -> dict | None:
+        """
+        Retrieve a film by its title (case-insensitive).
+        """
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT *
+                FROM film
+                WHERE LOWER(titre) = LOWER(?)
+                LIMIT 1
+                """,
+                (title,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_all_films(self, exclude: int | None = None) -> list[dict]:
+        """
+        Retrieve all films, optionally excluding one by ID.
+        """
+        with get_connection() as conn:
+            cur = conn.cursor()
+
+            if exclude is not None:
+                cur.execute(
+                    "SELECT * FROM film WHERE id_film != ?",
+                    (exclude,),
+                )
+            else:
+                cur.execute("SELECT * FROM film")
+
+            rows = cur.fetchall()
+            return [dict(row) for row in rows]

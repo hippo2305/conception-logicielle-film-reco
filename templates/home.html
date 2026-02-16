@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"/><title>MovieReco</title></head>
+<body>
+  <h1>Bienvenue {{ user.pseudo }}</h1>
+  <p>Rôle : {{ user.role }}</p>
+
+  <p>
+    🎬 <a href="/films">Voir les films</a><br/>
+    ⭐ <a href="/favorites">Mes favoris</a>
+  </p>
+
+  <form method="post" action="/logout">
+    <button type="submit">Se déconnecter</button>
+  </form>
+</body>
+</html>
+

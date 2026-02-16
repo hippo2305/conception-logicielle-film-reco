@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"/><title>MovieReco - Favoris</title></head>
+<body>
+  <h1>Mes favoris</h1>
+  <p><a href="/films">← Retour films</a> | <a href="/">Accueil</a></p>
+  <hr/>
+
+  {% if favorites %}
+    <ul>
+      {% for film in favorites %}
+        <li><b>{{ film.titre }}</b> {% if film.annee %}({{ film.annee }}){% endif %}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Aucun favori pour l’instant.</p>
+  {% endif %}
+</body>
+</html>
+
