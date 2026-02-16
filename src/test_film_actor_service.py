@@ -1,7 +1,7 @@
-from src.dao.dao import DAO
-from src.dao.film_dao import FilmDAO
-from src.service.actor_service import ActorService
-from src.service.film_service import FilmService
+from dao.dao import DAO
+from dao.film_dao import FilmDAO
+from service.actor_service import ActorService
+from service.film_service import FilmService
 
 
 DAO()._drop_table()
@@ -23,6 +23,7 @@ actor7 = ActorService().instantiate_actor("Ridley", "Daisy")
 film1 = FilmService().instantiate_film(
     "Star Wars IV: A New Hope",
     "George Lucas",
+    1977,
     "science-fiction",
 )
 
@@ -33,6 +34,7 @@ FilmService().save_film(film1)
 film2 = FilmService().instantiate_film(
     "Star Wars VII: The Force Awakens",
     "J.J. Abrams",
+    2015,
     "science-fiction",
 )
 

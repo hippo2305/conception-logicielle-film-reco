@@ -4,15 +4,19 @@ from business_object.actor import Actor
 from business_object.film import Film
 from dao.actor_dao import ActorDAO
 from dao.dao import DAO
-from dao.db_connection import DBConnection, get_connection
 from utils.log_decorator import log
 
 
-class FilmDAO(DAO):
+class FilmDAO:
     """
     Cette classe permet d'intéragir essentiellement avec la table film de la base de
     données. Dispose de méthodes pour ajouter et retourner des films selon des filtres.
     """
+    def __init__(self):
+        self.dao = DAO()
+        self.actor_dao = ActorDAO()
+
+    '''
     def insert_film(self, film: dict) -> None:
         """
         film dict attendu:
@@ -28,8 +32,7 @@ class FilmDAO(DAO):
         genres_str = ", ".join(film.get("genres", []))
         annee = film.get("annee")
 
-        with get_connection() as conn:
-            cur = conn.cursor()
+        with DBConnection().connection as connection, connection.cursor() as cur:
 
             # 1) film (UPSERT)
             cur.execute(
@@ -85,7 +88,9 @@ class FilmDAO(DAO):
                     ON CONFLICT(id_film, id_actor) DO NOTHING
                     """,
                     (film["id_film"], id_actor),
-                  
+                )
+    '''
+
     @log
     def exists(self, film: Film) -> bool:
         """
@@ -105,19 +110,14 @@ class FilmDAO(DAO):
             True si le film est déjà présent, False sinon
         """
         try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT 1 FROM FILM WHERE titre = %(titre)s AND realisateur = %(realisateur)s;",
-                    {"titre": film.titre, "realisateur": film.realisateur},
+            res = self.dao.select_query("FILM", "1", where = f"titre = '{film.titre}' AND realisateur = '{film.realisateur}'")
+            if res is None:
+                logging.info(
+                    f"Le film {film.titre} n'est pas présent dans la base."
                 )
-
-                if cursor.fetchone() is None:
-                    logging.info(
-                        f"Le film {film.titre} n'est pas présent dans la base."
-                    )
-                    return False
-                else:
-                    return True
+                return False
+            else:
+                return True
 
         except Exception as e:
             logging.error(f"Erreur lors de la recherche de l'acteur : {e}")
@@ -134,6 +134,7 @@ class FilmDAO(DAO):
             Objet Film contenant :
             - titre
             - realisateur
+            - annee
             - genre
 
         Retour
@@ -149,21 +150,7 @@ class FilmDAO(DAO):
                 return False
 
             # Insertion du film
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    INSERT INTO FILM (titre, realisateur, genre)
-                    VALUES (%(titre)s, %(realisateur)s, %(genre)s);
-                    """,
-                    {
-                        "titre": film.titre,
-                        "realisateur": film.realisateur,
-                        "genre": film.genre,
-                    },
-                )
-
-                connection.commit()
-                return True
+            self.dao.insert_query("FILM", "titre, realisateur, annee, genre", f"'{film.titre}', '{film.realisateur}', '{film.annee}', '{film.genre}'")
 
         except Exception as e:
             logging.error(f"Erreur lors de l'insertion du film : {e}")
@@ -181,25 +168,14 @@ class FilmDAO(DAO):
             if film.casting:
                 for actor in film.casting:
                     # N'ajout l'acteur que s'il n'est pas déjà dans la BDD
-                    if not ActorDAO().exists(actor):
-                        ActorDAO().add_actor(actor)
-                    id_actor = ActorDAO().get_id(actor)
+                    if not self.actor_dao.exists(actor):
+                        self.actor_dao.add_actor(actor)
+                    id_actor = self.actor_dao.get_id(actor)
 
                     # Insertion dans la table d'association
-                    with (
-                        DBConnection().connection as connection,
-                        connection.cursor() as cursor,
-                    ):
-                        # /!\ À AJOUTER : vérification que l'association n'existe pas déjà
+                    self.dao.insert_query("CASTING", "id_film, id_actor", f"{id_film}, {id_actor}")
+                    # /!\ À AJOUTER : vérification que l'association n'existe pas déjà
 
-                        cursor.execute(
-                            """
-                            INSERT INTO CASTING (id_film, id_actor)
-                            VALUES (%(id_film)s, %(id_actor)s)
-                            """,
-                            {"id_film": id_film, "id_actor": id_actor},
-                        )
-                        connection.commit()
                 return True
 
             else:
@@ -221,23 +197,8 @@ class FilmDAO(DAO):
                 return None
 
             # Récupération de l'id
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                                    SELECT id_film
-                                    FROM FILM
-                                    WHERE titre = %(titre)s
-                                        AND realisateur = %(realisateur)s
-                                    LIMIT 1;
-                                """,
-                    {
-                        "titre": film.titre,
-                        "realisateur": film.realisateur,
-                    },
-                )
-
-                connection.commit()
-                return cursor.fetchone()["id_film"]
+            res = self.dao.select_query("FILM", "id_film", where = f"titre = '{film.titre}' AND realisateur = '{film.realisateur}'")
+            return res[0]
 
         except Exception as e:
             logging.error(f"Erreur lors de la récupération de l'id : {e}")
@@ -249,10 +210,7 @@ class FilmDAO(DAO):
         Retourne la liste des films contenus dans la base de données.
         """
         try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute("SELECT * FROM FILM;")
-                connection.commit()
-                rows = cursor.fetchall()
+            rows = self.dao.select_query("FILM", multiple = True)
 
         except Exception as e:
             logging.info(e)
@@ -264,9 +222,10 @@ class FilmDAO(DAO):
             for row in rows:
                 films.append(
                     Film(
-                        titre=row["titre"],
-                        realisateur=row["realisateur"],
-                        genre=row["genre"],
+                        titre=row[1],
+                        realisateur=row[2],
+                        annee=row[3],
+                        genre=row[4]
                     )
                 )
         return films
@@ -282,25 +241,19 @@ class FilmDAO(DAO):
             # Récupère l'id du film
             id_film = self.get_id(film)
 
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT a.id_actor, a.nom, a.prenom
-                    FROM ACTOR a
-                    JOIN CASTING c ON c.id_actor = a.id_actor
-                    WHERE c.id_film = %(id_film)s
-                    ORDER BY a.nom ASC;
-                    """,
-                    {"id_film": id_film},
-                )
-                connection.commit()
-                rows = cursor.fetchall()
+            rows = self.dao.select_query(
+                "ACTOR a", "a.id_actor, a.nom, a.prenom",
+                "CASTING c on c.id_actor = a.id_actor",
+                f"c.id_film = {id_film}",
+                "ORDER BY a.nom ASC",
+                multiple = True,
+            )
 
         except Exception as e:
             logging.error(f"Erreur lors de la récupération du casting : {e}")
             return None
 
-        return [self._row_to_actor(row) for row in rows] if rows else None
+        return [Actor(row[1], row[2]) for row in rows] if rows else None
 
     '''
     @log
@@ -338,57 +291,38 @@ class FilmDAO(DAO):
     @log
     def genre_list(self) -> list[str]:
         """Retourne la liste des genres enregistrés en base."""
-        try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute("SELECT DISTINCT UPPER(genre) AS genre FROM FILM;")
-                res = cursor.fetchall()
-        except Exception as e:
-            logging.info(e)
-            raise
+        res = self.dao.select_query("FILM", "DISTINCT UPPER(genre) AS genre", multiple = True)
 
-        return [row["genre"] for row in res] if res else []
+        return [row[0] for row in res] if res else []
 
     @log
     def director_list(self) -> list[str]:
         """Retourne la liste des réalisateurs enregistrés en base."""
         try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT DISTINCT UPPER(realisateur) AS realisateur FROM FILM;"
-                )
-                res = cursor.fetchall()
+            res = self.dao.select_query("FILM", "DISTINCT UPPER(realisateur) AS realisateur", multiple = True)
         except Exception as e:
             logging.info(e)
             raise
 
-        return [row["realisateur"] for row in res] if res else []
+        return [row[2] for row in res] if res else []
 
     @log
     def list_id(self) -> list[str]:
         """Retourne la liste des identifiants des films existants en base."""
         try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute("SELECT DISTINCT id_film FROM film;")
-                res = cursor.fetchall()
+            res = self.dao.select_query("FILM", "DISTINCT id_film", multiple = True)
         except Exception as e:
             logging.info(e)
             raise
 
-        return [row["id_film"] for row in res] if res else []
+        return [row[0] for row in res] if res else []
 
     @log
     def get_by_id(self, id_film: str) -> Film | None:
         """Trouve un film à partir de son identifiant."""
         try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT * FROM FILM
-                    WHERE id_film = %(id_film)s;
-                    """,
-                    {"id_film": id_film},
-                )
-                res = cursor.fetchone()
+            res = self.dao.select_query("FILM", where = f"id_film = {id_film}")
+
         except Exception as e:
             logging.info(e)
             raise
@@ -397,24 +331,18 @@ class FilmDAO(DAO):
             return None
 
         return Film(
-            titre=res["titre"],
-            realisateur=res["realisateur"],
-            genre=res["genre"],
+            titre=res[1],
+            realisateur=res[2],
+            annee=res[3],
+            genre=res[4],
         )
 
     @log
     def get_by_genre(self, genre: str) -> list[Film]:
         """Trouve les films selon un genre donné (insensible à la casse)."""
         try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT * FROM FILM
-                    WHERE LOWER(genre) = LOWER(%(genre)s);
-                    """,
-                    {"genre": genre},
-                )
-                res = cursor.fetchall()
+            res = self.dao.select_query("FILM", where = f"LOWER(genre) = LOWER({genre})", multiple = True)
+
         except Exception as e:
             logging.info(e)
             raise
@@ -424,9 +352,10 @@ class FilmDAO(DAO):
             for row in res:
                 films.append(
                     Film(
-                        titre=row["titre"],
-                        realisateur=row["realisateur"],
-                        genre=row["genre"],
+                        titre=row[1],
+                        realisateur=row[2],
+                        annee=row[3],
+                        genre=row[4],
                     )
                 )
         return films
@@ -435,15 +364,8 @@ class FilmDAO(DAO):
     def get_by_director(self, realisateur: str) -> list[Film]:
         """Trouve les films selon un réalisateur donné (insensible à la casse)."""
         try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT * FROM FILM
-                    WHERE LOWER(realisateur) = LOWER(%(realisateur)s);
-                    """,
-                    {"realisateur": realisateur},
-                )
-                res = cursor.fetchall()
+            res = self.dao.select_query("FILM", where = f"LOWER(realisateur) = LOWER({realisateur})", multiple = True)
+
         except Exception as e:
             logging.info(e)
             raise
@@ -453,9 +375,10 @@ class FilmDAO(DAO):
             for row in res:
                 films.append(
                     Film(
-                        titre=row["titre"],
-                        realisateur=row["realisateur"],
-                        genre=row["genre"],
+                        titre=row[1],
+                        realisateur=row[2],
+                        annee=row[3],
+                        genre=row[4],
                     )
                 )
         return films
@@ -467,16 +390,8 @@ class FilmDAO(DAO):
         Compatible PostgreSQL avec ILIKE (insensible à la casse).
         """
         try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT * FROM FILM
-                    WHERE titre ILIKE %(pattern)s
-                    ORDER BY titre ASC;
-                    """,
-                    {"pattern": f"%{titre}%"},
-                )
-                res = cursor.fetchall()
+            res = self.dao.select_query("FILM", where = f"titre ILIKE {titre}", multiple = True)
+
         except Exception as e:
             logging.info(e)
             raise
@@ -486,21 +401,10 @@ class FilmDAO(DAO):
             for row in res:
                 films.append(
                     Film(
-                        titre=row["titre"],
-                        realisateur=row["realisateur"],
-                        genre=row["genre"],
+                        titre=row[1],
+                        realisateur=row[2],
+                        annee=row[3],
+                        genre=row[4]
                     )
                 )
         return films
-
-    # -----------------------------
-    # UTILITAIRE
-    # -----------------------------
-    def _row_to_actor(self, row) -> Actor:
-        """
-        Transforme une ligne SQL en objet Actor.
-        """
-        return Actor(
-            nom=row["nom"],
-            prenom=row["prenom"],
-        )

@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from src.utils.psswd_proc import PasswordProcessing
+from utils.psswd_proc import PasswordProcessing
 
 
 # -----------------------------
