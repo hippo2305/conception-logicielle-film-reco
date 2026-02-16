@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from src.business_object import User
+from business_object import User
 
 
 @pytest.mark.parametrize(
