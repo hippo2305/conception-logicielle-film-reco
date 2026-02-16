@@ -6,45 +6,44 @@ from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from src.utils.singleton import Singleton
+from utils.singleton import Singleton
 
 
 DB_PATH = "data/local.db"
 
-
-@contextmanager
-def get_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-        conn.commit()
-    except:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+class LocalDBConnection(metaclass=Singleton):
+    """
+    Classe de connexion à la base de données SQLite
+    (Singleton : une seule connexion)
+    """
+    @contextmanager
+    def get_connection(self):
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            yield conn
+            conn.commit()
+        except:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
 class DBConnection(metaclass=Singleton):
     """
-    Classe de connexion à la base de données
+    Classe de connexion à la base de données PostgreSQL
     (Singleton : une seule connexion)
     """
-
     def __init__(self):
         load_dotenv(override=True)
-        # Open the connection.
-        if os.environ["POSTGRES"] == "False":
-            self.__connection = get_connection()
-        else:
-            self.__connection = psycopg2.connect(
-                host=os.environ["POSTGRES_HOST"],
-                port=os.environ["POSTGRES_PORT"],
-                database=os.environ["POSTGRES_DATABASE"],
-                user=os.environ["POSTGRES_USER"],
-                password=os.environ["POSTGRES_PASSWORD"],
-                cursor_factory=RealDictCursor,
-            )
+        self.__connection = psycopg2.connect(
+            host=os.environ["POSTGRES_HOST"],
+            port=os.environ["POSTGRES_PORT"],
+            database=os.environ["POSTGRES_DATABASE"],
+            user=os.environ["POSTGRES_USER"],
+            password=os.environ["POSTGRES_PASSWORD"],
+            cursor_factory=RealDictCursor,
+        )
+
 
     @property
     def connection(self):
