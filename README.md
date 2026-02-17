@@ -54,10 +54,6 @@ uv run python main.py
 
 Lors du premier lancement du programme (`python main.py`), un utilisateur administrateur est automatiquement créé dans la base de données s’il n’existe pas déjà.
 
-Cet administrateur par défaut dispose des identifiants suivants :
-
-- Nom d’utilisateur : admin
-- Mot de passe : Admin123@
 
 Ce compte permet d’accéder aux fonctionnalités réservées à l’administrateur dès la première exécution du projet étant donné qu'il n'y a pas de superusers.
 
