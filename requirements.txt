@@ -14,3 +14,4 @@ kaleido==0.2.1
 uvicorn
 logging
 logging.config
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
