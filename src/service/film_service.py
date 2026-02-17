@@ -13,7 +13,7 @@ class FilmService:
         self.tmdb_service = TmdbService()
         self.film_dao = FilmDAO()
 
-    def import_from_tmdb(self, query: str, nb_acteurs: int = 5) -> dict:
+    def import_from_tmdb(self, query: str, nb_acteurs: int = 5) -> Film:
         film = self.tmdb_service.get_movie_filtered(query=query, nb_acteurs=nb_acteurs)
         self.film_dao.insert_film(film)
         return film

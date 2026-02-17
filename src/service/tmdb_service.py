@@ -22,45 +22,27 @@ class TmdbService:
             raise RuntimeError("Clé TMDB_API_KEY manquante")
 
     # -----------------------------
-    # Recherche de films
+    # factorisation des requestes
+    # -----------------------------
+    def _get(self, endpoint: str, extra_params: dict = None) -> dict:
+        param = {"api_key": self.api_key, "language": "fr-FR"}
+        if extra_params:
+            param.update(extra_params)
+        response = requests.get(f"{self.base_url}{endpoint}", params=param, timeout=20)
+        response.raise_for_status()
+        return response.json()
+
+    # -----------------------------
+    # Réquetes à l'API TMDB
     # -----------------------------
     def search_movie(self, query: str, page: int = 1) -> dict:
-        url = f"{self.base_url}/search/movie"
-        params = {
-            "api_key": self.api_key,
-            "query": query,
-            "language": "fr-FR",
-            "page": page,
-        }
+        return self._get("/search/movie", {"query": query, "page": page})
 
-        response = requests.get(url, params=params, timeout=20)
-        response.raise_for_status()
-        return response.json()
-
-    # -----------------------------
-    # Détails d’un film
-    # -----------------------------
     def movie_details(self, movie_id: int) -> dict:
-        url = f"{self.base_url}/movie/{movie_id}"
-        params = {
-            "api_key": self.api_key,
-            "language": "fr-FR",
-        }
+        return self._get(f"/movie/{movie_id}")
 
-        response = requests.get(url, params=params, timeout=20)
-        response.raise_for_status()
-        return response.json()
-
-    # -----------------------------
-    # Crédits (réalisateur + casting)
-    # -----------------------------
     def movie_credits(self, movie_id: int) -> dict:
-        url = f"{self.base_url}/movie/{movie_id}/credits"
-        params = {"api_key": self.api_key}
-
-        response = requests.get(url, params=params, timeout=20)
-        response.raise_for_status()
-        return response.json()
+        return self._get(f"/movie/{movie_id}/credits", {"language": None})
 
     # -----------------------------
     # Film filtré : id, titre, realisateur, annee, genres, casting
