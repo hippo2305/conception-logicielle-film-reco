@@ -5,16 +5,18 @@ import sqlite3
 from dotenv import load_dotenv
 import psycopg2
 
-from utils.singleton import Singleton
+from src.utils.singleton import Singleton
 
 
 DB_PATH = "data/local.db"
+
 
 class LocalDBConnection(metaclass=Singleton):
     """
     Classe de connexion à la base de données SQLite
     (Singleton : une seule connexion)
     """
+
     @contextmanager
     def get_connection(self):
         conn = sqlite3.connect(DB_PATH)
@@ -27,11 +29,13 @@ class LocalDBConnection(metaclass=Singleton):
         finally:
             conn.close()
 
+
 class DBConnection(metaclass=Singleton):
     """
     Classe de connexion à la base de données PostgreSQL
     (Singleton : une seule connexion)
     """
+
     def __init__(self):
         load_dotenv(override=True)
         self.__connection = psycopg2.connect(
@@ -41,7 +45,6 @@ class DBConnection(metaclass=Singleton):
             user=os.environ["POSTGRES_USER"],
             password=os.environ["POSTGRES_PASSWORD"],
         )
-
 
     @property
     def connection(self):

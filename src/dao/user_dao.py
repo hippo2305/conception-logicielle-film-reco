@@ -1,8 +1,5 @@
-from ast import List
-
-from business_object import Admin, Client, User
-from dao.db_connection import DBConnection
-from utils import Logger
+from src.business_object import Admin, Client, User
+from src.dao.db_connection import DBConnection
 
 
 class UserDao:
@@ -179,7 +176,7 @@ class UserDao:
                 return users
         except Exception:
             return []
-                    return None
+        return None
 
     def get_user_by_pseudo(self, pseudo: str) -> User | None:
         """

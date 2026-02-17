@@ -1,4 +1,4 @@
-from business_object.user import User
+from src.business_object.user import User
 
 
 class Admin(User):

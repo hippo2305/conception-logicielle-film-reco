@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from dao.db_connection import DBConnection, LocalDBConnection
+from src.dao.db_connection import DBConnection, LocalDBConnection
 
 
 class DAO:
@@ -12,7 +12,7 @@ class DAO:
         """
         self.ordre_suppr_tables = ["FAVORIS", "CASTING", "ACTOR", "FILM", "USERS"]
         # Ordre logique de suppression pour respecter les contraintes FK
-        query = ("""
+        query = """
             CREATE TABLE IF NOT EXISTS USERS (
                 id_user SERIAL PRIMARY KEY,
                 pseudo VARCHAR(255) NOT NULL,
@@ -47,7 +47,7 @@ class DAO:
                 FOREIGN KEY (id_film) REFERENCES FILM(id_film) ON DELETE CASCADE,
                 FOREIGN KEY (id_actor) REFERENCES ACTOR(id_actor) ON DELETE CASCADE
                 );
-            """)
+            """
 
         if self.postgres():
             with DBConnection().connection as connection, connection.cursor() as cursor:
@@ -66,9 +66,13 @@ class DAO:
         elif os.environ["POSTGRES"] == "True":
             return True
         else:
-            raise Exception("La variable d'environnement POSTGRES n'accepte que deux valeurs : True et False")
+            raise Exception(
+                "La variable d'environnement POSTGRES n'accepte que deux valeurs : True et False"
+            )
 
-    def select_query(self, tablename, var = "*", join = None, where = None, other = None, multiple = False):
+    def select_query(
+        self, tablename, var="*", join=None, where=None, other=None, multiple=False
+    ):
         query = f"SELECT {var} FROM {tablename}"
         if join:
             query += f" JOIN {join}"
@@ -96,7 +100,7 @@ class DAO:
                 else:
                     return cursor.fetchone()
 
-    def insert_query(self, tablename, vars, values, other = None):
+    def insert_query(self, tablename, vars, values, other=None):
         query = f"INSERT INTO {tablename} ({vars}) VALUES ({values})"
         if other:
             query += f" {other}"

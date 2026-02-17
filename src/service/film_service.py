@@ -1,7 +1,7 @@
-from business_object.actor import Actor
-from business_object.film import Film
-from dao.film_dao import FilmDAO
-from service.tmdb_service import TmdbService
+from src.business_object.actor import Actor
+from src.business_object.film import Film
+from src.dao.film_dao import FilmDAO
+from src.service.tmdb_service import TmdbService
 
 
 class FilmService:
@@ -34,7 +34,7 @@ class FilmService:
         return Film(
             titre=titre,
             realisateur=realisateur,
-            annee = annee,
+            annee=annee,
             genre=genre,
         )
 

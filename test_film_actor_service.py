@@ -1,7 +1,7 @@
-from dao.dao import DAO
-from dao.film_dao import FilmDAO
-from service.actor_service import ActorService
-from service.film_service import FilmService
+from src.dao.dao import DAO
+from src.dao.film_dao import FilmDAO
+from src.service.actor_service import ActorService
+from src.service.film_service import FilmService
 
 
 DAO()._drop_table()

@@ -11,8 +11,8 @@ from app_errors import (
     UserAlreadyExistsError,
     UserNotFoundError,
 )
-from business_object import User
-from service.user_service import UserService
+from src.business_object import User
+from src.service.user_service import UserService
 
 
 @pytest.fixture

@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 import requests
 
+from src.business_object.film import Film
+
 
 class TmdbService:
     """
@@ -63,7 +65,7 @@ class TmdbService:
     # -----------------------------
     # Film filtré : id, titre, realisateur, annee, genres, casting
     # -----------------------------
-    def get_movie_filtered(self, query: str, nb_acteurs: int = 5) -> dict:
+    def get_movie_filtered(self, query: str, nb_acteurs: int = 5) -> Film:
         search = self.search_movie(query=query, page=1)
         results = search.get("results", [])
         if not results:
@@ -87,17 +89,17 @@ class TmdbService:
             a.get("name") for a in credits.get("cast", [])[:nb_acteurs] if a.get("name")
         ]
 
-        genres = [g.get("name") for g in details.get("genres", []) if g.get("name")]
+        genre = [g.get("name") for g in details.get("genres", []) if g.get("name")]
+        genre = ", ".join(genre)
 
         # 📅 Année du film (API TMDB)
         release_date = details.get("release_date")  # ex: "2010-07-16"
         annee = int(release_date[:4]) if release_date else None
 
-        return {
-            "id_film": movie_id,
-            "titre": details.get("title"),
-            "realisateur": realisateur,
-            "annee": annee,
-            "genres": genres,
-            "casting": casting,
-        }
+        return Film(
+            titre=details.get("title"),
+            realisateur=realisateur,
+            annee=annee,
+            genre=genre,
+            casting=casting,
+        )

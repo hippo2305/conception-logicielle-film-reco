@@ -1,9 +1,9 @@
 import logging
 
-from business_object.actor import Actor
-from business_object.film import Film
-from dao.dao import DAO
-from utils.log_decorator import log
+from src.business_object.actor import Actor
+from src.business_object.film import Film
+from src.dao.dao import DAO
+from src.utils.log_decorator import log
 
 
 class ActorDAO:
@@ -11,6 +11,7 @@ class ActorDAO:
     Cette classe permet d'interagir avec la table actor de la base de données.
     Elle gère l'ajout et la récupération des acteurs.
     """
+
     def __init__(self):
         self.dao = DAO()
 
@@ -32,7 +33,9 @@ class ActorDAO:
             True si l'acteur est déjà présent, False sinon
         """
         try:
-            res = self.dao.select_query("ACTOR", "1", where = f"nom = '{actor.nom}' AND prenom = '{actor.prenom}'")
+            res = self.dao.select_query(
+                "ACTOR", "1", where=f"nom = '{actor.nom}' AND prenom = '{actor.prenom}'"
+            )
 
             if res is None:
                 logging.info(
@@ -72,7 +75,9 @@ class ActorDAO:
                 logging.info(f"L'acteur {actor.prenom} {actor.nom} existe déjà.")
                 return False
 
-            self.dao.insert_query("ACTOR", "nom, prenom", f"'{actor.nom}', '{actor.prenom}'")
+            self.dao.insert_query(
+                "ACTOR", "nom, prenom", f"'{actor.nom}', '{actor.prenom}'"
+            )
             return True
 
         except Exception as e:
@@ -90,7 +95,12 @@ class ActorDAO:
                 logging.info(f"L'acteur {actor.prenom} {actor.nom} n'existe pas.")
                 return True
 
-            res = self.dao.select_query("ACTOR", "id_actor", where = f"nom = '{actor.nom}' AND prenom = '{actor.prenom}'", other = "LIMIT 1")
+            res = self.dao.select_query(
+                "ACTOR",
+                "id_actor",
+                where=f"nom = '{actor.nom}' AND prenom = '{actor.prenom}'",
+                other="LIMIT 1",
+            )
             return res[0]
 
         except Exception as e:
@@ -103,7 +113,7 @@ class ActorDAO:
         Retourne la liste de tous les acteurs.
         """
         try:
-            rows = self.dao.select_query("ACTOR", multiple = True)
+            rows = self.dao.select_query("ACTOR", multiple=True)
 
         except Exception as e:
             logging.error(f"Erreur lors de la récupération des acteurs : {e}")
@@ -126,12 +136,13 @@ class ActorDAO:
             id_actor = self.get_id(actor)
 
             rows = self.dao.select_query(
-                "FILM f", "f.id_film, f.titre, f.realisateur, f.annee, f.genre",
+                "FILM f",
+                "f.id_film, f.titre, f.realisateur, f.annee, f.genre",
                 "CASTING c ON c.id_film = f.id_film",
                 f"c.id_actor = {id_actor}",
                 "ORDER BY f.titre ASC",
-                multiple = True
-                )
+                multiple=True,
+            )
 
         except Exception as e:
             logging.error(f"Erreur lors de la récupération des films : {e}")

@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from service.tmdb_service import TmdbService
+from src.service.tmdb_service import TmdbService
 
 
 class MAIN:

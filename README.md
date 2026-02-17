@@ -15,10 +15,10 @@ git clone https://github.com/hippo2305/conception-logicielle-film-reco.git
 cd conception-logicielle-film-reco
 ```
 
-## 2. Installer les dépendances
+## 2. Installer l'environnement
 
 ``` bash
-python -m pip install -r requirements.txt
+uv sync
 ```
 
 ## 3. Configurer la base de données
@@ -26,39 +26,28 @@ python -m pip install -r requirements.txt
 Créer un fichier `.env` à la racine du projet :
 
 ``` env
-POSTGRES_HOST = ""
-POSTGRES_PORT = 
-POSTGRES_DATABASE = ""
-POSTGRES_USER = ""
-POSTGRES_PASSWORD = ""
+PPOSTGRES = False
+POSTGRES_HOST =
+POSTGRES_PORT =
+POSTGRES_DATABASE =
+POSTGRES_USER =
+POSTGRES_PASSWORD =
+TMDB_BASE_URL =
+TMDB_API_KEY =
+TMDB_API_TOKEN =
 ```
 
 ## 4. Lancer les tests
 
-### Avec couverture
-
 - **Dans le terminal**
 
 ``` bash
-PYTHONPATH=src pytest src/tests/ --cov=src/tests
+uv run pytest
 ```
-
-- **Avec un rapport html**
-
-``` bash
-PYTHONPATH=src pytest src/tests/ --cov=src/tests --cov-report=html
-```
-
-### Sans couverture
-
-``` bash
-PYTHONPATH=src pytest src/tests/ -v
-```
-
 ## 5. Lancer l'application 
 
 ``` bash
-python main.py
+uv run python main.py
 ```
 
 - **Création automatique de l’utilisateur administrateur**
@@ -74,16 +63,7 @@ Ce compte permet d’accéder aux fonctionnalités réservées à l’administra
 
 **NB** : Vous ne devez jamais supprimer les comptes de tous les admins (il faut au moins en avoir un).
 
-# Commande supplémentaire utile (si soucis de package)
-
-``` bash
-python -m pip install -e .
-```
-
-
-
-
-# Auteurs
+## Auteurs
 
 Projet réalisé par :
 

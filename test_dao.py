@@ -1,6 +1,6 @@
-from business_object.actor import Actor
-from dao.actor_dao import ActorDAO
-from dao.dao import DAO
+from src.business_object.actor import Actor
+from src.dao.actor_dao import ActorDAO
+from src.dao.dao import DAO
 
 
 DAO()._drop_table()
