@@ -6,7 +6,7 @@ def main():
     init_db()
 
     fs = FilmService()
-    film = fs.import_from_tmdb("Inception", nb_acteurs=5)
+    film = fs.import_from_tmdb("Titanic", nb_acteurs=5)
     print(
         "Inséré :",
         film["id_film"],

@@ -2,6 +2,7 @@ from dao.db_connection import get_connection
 
 
 class FavoriteDao:
+    # ✅ Ajouter un favori
     def add_favorite(self, user_id: int, film_id: int) -> None:
         with get_connection() as conn:
             cur = conn.cursor()
@@ -9,7 +10,22 @@ class FavoriteDao:
                 "INSERT OR IGNORE INTO favorites (id_user, id_film) VALUES (?, ?);",
                 (user_id, film_id),
             )
+            conn.commit()
 
+    # ✅ Ajouter plusieurs favoris
+    def add_favorites(self, user_id: int, film_ids: list[int]) -> None:
+        if not film_ids:
+            return
+
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.executemany(
+                "INSERT OR IGNORE INTO favorites (id_user, id_film) VALUES (?, ?);",
+                [(user_id, film_id) for film_id in film_ids],
+            )
+            conn.commit()
+
+    # ✅ Retirer un favori
     def remove_favorite(self, user_id: int, film_id: int) -> None:
         with get_connection() as conn:
             cur = conn.cursor()
@@ -17,7 +33,22 @@ class FavoriteDao:
                 "DELETE FROM favorites WHERE id_user = ? AND id_film = ?;",
                 (user_id, film_id),
             )
+            conn.commit()
 
+    # ✅ Retirer plusieurs favoris
+    def remove_favorites(self, user_id: int, film_ids: list[int]) -> None:
+        if not film_ids:
+            return
+
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.executemany(
+                "DELETE FROM favorites WHERE id_user = ? AND id_film = ?;",
+                [(user_id, film_id) for film_id in film_ids],
+            )
+            conn.commit()
+
+    # ✅ Récupérer les ids favoris
     def get_favorite_film_ids(self, user_id: int) -> set[int]:
         with get_connection() as conn:
             cur = conn.cursor()
@@ -25,6 +56,7 @@ class FavoriteDao:
             rows = cur.fetchall()
             return {int(r["id_film"]) for r in rows} if rows else set()
 
+    # ✅ Liste complète des favoris
     def list_favorites(self, user_id: int) -> list[dict]:
         with get_connection() as conn:
             cur = conn.cursor()

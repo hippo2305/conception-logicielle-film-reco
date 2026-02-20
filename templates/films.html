@@ -12,34 +12,92 @@
     <a href="/favorites">Mes favoris</a>
   </p>
 
-  {% if films and films|length > 0 %}
-    <ul>
-      {% for film in films %}
-        <li>
-          <b>{{ film["titre"] }}</b>
-          {% if film["annee"] %} ({{ film["annee"] }}){% endif %}
-          {% if film["realisateur"] %} — {{ film["realisateur"] }}{% endif %}
-          {% if film["genre"] %} — {{ film["genre"] }}{% endif %}
+  <!-- ✅ Barre de recherche -->
+  <form method="get" action="/films" style="margin-bottom: 1rem;">
+    <input type="text" name="q" placeholder="Rechercher un film..." value="{{ q }}" />
+    <button type="submit">Rechercher</button>
+    {% if q %}
+      <a href="/films" style="margin-left: .5rem;">Réinitialiser</a>
+    {% endif %}
+  </form>
 
-          {% if film["id_film"] in fav_ids %}
-            <form method="post" action="/favorites/remove" style="display:inline;">
-              <input type="hidden" name="id_film" value="{{ film['id_film'] }}">
-              <button type="submit">Retirer ⭐</button>
-            </form>
-          {% else %}
-            <form method="post" action="/favorites/add" style="display:inline;">
-              <input type="hidden" name="id_film" value="{{ film['id_film'] }}">
-              <button type="submit">Ajouter ⭐</button>
-            </form>
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ul>
+  {% if films and films|length > 0 %}
+
+    <!-- ✅ UN SEUL FORM pour tout -->
+    <form method="post" action="/favorites/add_many">
+
+      <!-- Bouton bulk -->
+      <button type="submit">⭐ Ajouter la sélection aux favoris</button>
+
+      <div style="margin: .5rem 0;">
+        <label>
+          <input type="checkbox" id="checkAll" />
+          Tout sélectionner
+        </label>
+      </div>
+
+      <ul>
+        {% for film in films %}
+          <li style="margin: .3rem 0;">
+            <!-- checkbox pour bulk add -->
+            <label>
+              <input
+                type="checkbox"
+                name="film_ids"
+                value="{{ film['id_film'] }}"
+                {% if film['id_film'] in fav_ids %}disabled{% endif %}
+              />
+              <b>{{ film["titre"] }}</b>
+              {% if film["annee"] %} ({{ film["annee"] }}){% endif %}
+              {% if film["realisateur"] %} — {{ film["realisateur"] }}{% endif %}
+              {% if film["genre"] %} — {{ film["genre"] }}{% endif %}
+            </label>
+
+            {% if film["id_film"] in fav_ids %}
+              <span style="color: green; margin-left: .5rem;">déjà en favori</span>
+
+              <!-- ✅ bouton qui soumet ce même form mais vers /favorites/remove -->
+              <button
+                type="submit"
+                formaction="/favorites/remove"
+                formmethod="post"
+                name="id_film"
+                value="{{ film['id_film'] }}"
+                style="margin-left:.5rem;"
+              >
+                Retirer ⭐
+              </button>
+            {% else %}
+              <button
+                type="submit"
+                formaction="/favorites/add"
+                formmethod="post"
+                name="id_film"
+                value="{{ film['id_film'] }}"
+                style="margin-left:.5rem;"
+              >
+                Ajouter ⭐
+              </button>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </form>
+
+    <script>
+      const checkAll = document.getElementById("checkAll");
+      if (checkAll) {
+        checkAll.addEventListener("change", () => {
+          document.querySelectorAll('input[name="film_ids"]:not(:disabled)').forEach(cb => {
+            cb.checked = checkAll.checked;
+          });
+        });
+      }
+    </script>
+
   {% else %}
     <p>Aucun film en base.</p>
   {% endif %}
 
 </body>
 </html>
-
-

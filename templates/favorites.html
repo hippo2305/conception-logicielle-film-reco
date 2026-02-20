@@ -1,20 +1,64 @@
 <!doctype html>
 <html lang="fr">
-<head><meta charset="utf-8"/><title>MovieReco - Favoris</title></head>
+<head>
+  <meta charset="utf-8"/>
+  <title>MovieReco - Favoris</title>
+</head>
 <body>
   <h1>Mes favoris</h1>
-  <p><a href="/films">← Retour films</a> | <a href="/">Accueil</a></p>
+
+  <p>
+    <a href="/films">← Retour films</a> |
+    <a href="/">Accueil</a>
+  </p>
+
   <hr/>
 
-  {% if favorites %}
-    <ul>
-      {% for film in favorites %}
-        <li><b>{{ film.titre }}</b> {% if film.annee %}({{ film.annee }}){% endif %}</li>
-      {% endfor %}
-    </ul>
+  {% if favorites and favorites|length > 0 %}
+
+    <form method="post" action="/favorites/remove_many">
+
+      <button type="submit">❌ Retirer la sélection</button>
+
+      <div style="margin: .5rem 0;">
+        <label>
+          <input type="checkbox" id="checkAllFav" />
+          Tout sélectionner
+        </label>
+      </div>
+
+      <ul>
+        {% for film in favorites %}
+          <li>
+            <label>
+              <input
+                type="checkbox"
+                name="film_ids"
+                value="{{ film['id_film'] }}"
+              />
+              <b>{{ film["titre"] }}</b>
+              {% if film["annee"] %} ({{ film["annee"] }}){% endif %}
+            </label>
+          </li>
+        {% endfor %}
+      </ul>
+
+    </form>
+
+    <script>
+      const checkAllFav = document.getElementById("checkAllFav");
+      if (checkAllFav) {
+        checkAllFav.addEventListener("change", () => {
+          document.querySelectorAll('input[name="film_ids"]').forEach(cb => {
+            cb.checked = checkAllFav.checked;
+          });
+        });
+      }
+    </script>
+
   {% else %}
     <p>Aucun favori pour l’instant.</p>
   {% endif %}
+
 </body>
 </html>
-

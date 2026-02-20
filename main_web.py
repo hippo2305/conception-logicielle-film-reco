@@ -1,4 +1,7 @@
-from fastapi import FastAPI, Form, Request
+import traceback
+from typing import Annotated
+
+from fastapi import FastAPI, Form, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -47,7 +50,11 @@ def login_page(request: Request):
 
 
 @app.post("/login", response_class=HTMLResponse)
-def login_action(request: Request, pseudo: str = Form(...), password: str = Form(...)):
+def login_action(
+    request: Request,
+    pseudo: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+):
     try:
         user = auth.login(pseudo=pseudo, password=password)
         request.session["user"] = user
@@ -61,9 +68,9 @@ def login_action(request: Request, pseudo: str = Form(...), password: str = Form
 @app.post("/signup", response_class=HTMLResponse)
 def signup_action(
     request: Request,
-    pseudo: str = Form(...),
-    password: str = Form(...),
-    email: str | None = Form(default=None),
+    pseudo: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    email: Annotated[str | None, Form()] = None,
 ):
     try:
         auth.signup(pseudo=pseudo, password=password, email=email)
@@ -81,23 +88,32 @@ def logout_post(request: Request):
 
 
 @app.get("/films", response_class=HTMLResponse)
-def films_page(request: Request):
+def films_page(request: Request, q: str | None = Query(default=None)):
     user, redirect = require_login(request)
     if redirect:
         return redirect
 
     try:
         films = film_dao.get_all_films() or []
-        fav_ids = favorite_dao.get_favorite_film_ids(user["id_user"]) or []
-        fav_ids = set(fav_ids)
+
+        # Filtrage (simple) côté serveur
+        if q and q.strip():
+            qq = q.strip().lower()
+            films = [f for f in films if qq in (f.get("titre") or "").lower()]
+
+        fav_ids = set(favorite_dao.get_favorite_film_ids(user["id_user"]) or set())
 
         return templates.TemplateResponse(
             "films.html",
-            {"request": request, "user": user, "films": films, "fav_ids": fav_ids},
+            {
+                "request": request,
+                "user": user,
+                "films": films,
+                "fav_ids": fav_ids,
+                "q": q or "",
+            },
         )
     except Exception:
-        import traceback
-
         return HTMLResponse(
             "<h1>Erreur /films</h1><pre>" + traceback.format_exc() + "</pre>",
             status_code=500,
@@ -118,7 +134,7 @@ def favorites_page(request: Request):
 
 
 @app.post("/favorites/add")
-def add_favorite(request: Request, id_film: int = Form(...)):
+def add_favorite(request: Request, id_film: Annotated[int, Form()]):
     user, redirect = require_login(request)
     if redirect:
         return redirect
@@ -127,11 +143,52 @@ def add_favorite(request: Request, id_film: int = Form(...)):
     return RedirectResponse(url="/films", status_code=HTTP_303_SEE_OTHER)
 
 
+@app.post("/favorites/add_many")
+def add_favorites_many(
+    request: Request,
+    film_ids: Annotated[list[int] | None, Form()] = None,
+):
+    user, redirect = require_login(request)
+    if redirect:
+        return redirect
+
+    if not film_ids:
+        return RedirectResponse(url="/films", status_code=HTTP_303_SEE_OTHER)
+
+    favorite_dao.add_favorites(user["id_user"], film_ids)
+    return RedirectResponse(url="/films", status_code=HTTP_303_SEE_OTHER)
+
+
 @app.post("/favorites/remove")
-def remove_favorite(request: Request, id_film: int = Form(...)):
+def remove_favorite(request: Request, id_film: Annotated[int, Form()]):
     user, redirect = require_login(request)
     if redirect:
         return redirect
 
     favorite_dao.remove_favorite(user["id_user"], id_film)
     return RedirectResponse(url="/films", status_code=HTTP_303_SEE_OTHER)
+
+
+@app.post("/favorites/remove_many")
+def remove_favorites_many(
+    request: Request,
+    film_ids: Annotated[list[int] | None, Form()] = None,
+):
+    user, redirect = require_login(request)
+    if redirect:
+        return redirect
+
+    try:
+        if not film_ids:
+            return RedirectResponse(url="/favorites", status_code=HTTP_303_SEE_OTHER)
+
+        favorite_dao.remove_favorites(user["id_user"], film_ids)
+        return RedirectResponse(url="/favorites", status_code=HTTP_303_SEE_OTHER)
+
+    except Exception:
+        return HTMLResponse(
+            "<h1>Erreur /favorites/remove_many</h1><pre>"
+            + traceback.format_exc()
+            + "</pre>",
+            status_code=500,
+        )
