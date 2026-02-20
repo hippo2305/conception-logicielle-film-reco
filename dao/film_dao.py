@@ -64,10 +64,7 @@ class FilmDao:
                 )
 
                 # Retrieve actor ID
-                cur.execute(
-                    "SELECT id_actor FROM actor WHERE nom = ?",
-                    (nom,),
-                )
+                cur.execute("SELECT id_actor FROM actor WHERE nom = ?", (nom,))
                 row = cur.fetchone()
                 if not row:
                     continue
@@ -84,37 +81,54 @@ class FilmDao:
                     (film["id_film"], id_actor),
                 )
 
+            conn.commit()
+
     # -----------------------------
     # READ
     # -----------------------------
-    def get_film(self, film_id: int) -> dict | None:
+    def get_film_by_id(self, id_film: int) -> dict | None:
         """
         Retrieve a film by its ID.
         """
         with get_connection() as conn:
             cur = conn.cursor()
-            cur.execute(
-                "SELECT * FROM film WHERE id_film = ?",
-                (film_id,),
-            )
+            cur.execute("SELECT * FROM film WHERE id_film = ?;", (id_film,))
             row = cur.fetchone()
             return dict(row) if row else None
 
-    def get_film_by_title(self, title: str) -> dict | None:
+    def get_film_by_title(self, title: str, annee: int | None = None) -> dict | None:
         """
         Retrieve a film by its title (case-insensitive).
+        If annee is provided, disambiguates identical titles.
         """
+        title = (title or "").strip()
+        if not title:
+            return None
+
         with get_connection() as conn:
             cur = conn.cursor()
-            cur.execute(
-                """
-                SELECT *
-                FROM film
-                WHERE LOWER(titre) = LOWER(?)
-                LIMIT 1
-                """,
-                (title,),
-            )
+
+            if annee is None:
+                cur.execute(
+                    """
+                    SELECT *
+                    FROM film
+                    WHERE LOWER(titre) = LOWER(?)
+                    LIMIT 1
+                    """,
+                    (title,),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT *
+                    FROM film
+                    WHERE LOWER(titre) = LOWER(?) AND annee = ?
+                    LIMIT 1
+                    """,
+                    (title, annee),
+                )
+
             row = cur.fetchone()
             return dict(row) if row else None
 
@@ -126,12 +140,39 @@ class FilmDao:
             cur = conn.cursor()
 
             if exclude is not None:
-                cur.execute(
-                    "SELECT * FROM film WHERE id_film != ?",
-                    (exclude,),
-                )
+                cur.execute("SELECT * FROM film WHERE id_film != ?;", (exclude,))
             else:
-                cur.execute("SELECT * FROM film")
+                cur.execute("SELECT * FROM film;")
 
             rows = cur.fetchall()
-            return [dict(row) for row in rows]
+            return [dict(row) for row in rows] if rows else []
+
+    # ✅ NOUVELLE : recherche par titre (contains) et/ou genre (contains)
+    def search_films(
+        self,
+        q: str | None = None,
+        genre: str | None = None,
+        limit: int = 100,
+    ) -> list[dict]:
+        q = (q or "").strip()
+        genre = (genre or "").strip()
+
+        sql = "SELECT * FROM film WHERE 1=1"
+        params: list = []
+
+        if q:
+            sql += " AND LOWER(titre) LIKE LOWER(?)"
+            params.append(f"%{q}%")
+
+        if genre:
+            sql += " AND LOWER(genre) LIKE LOWER(?)"
+            params.append(f"%{genre}%")
+
+        sql += " ORDER BY titre LIMIT ?"
+        params.append(limit)
+
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(sql, tuple(params))
+            rows = cur.fetchall()
+            return [dict(r) for r in rows] if rows else []

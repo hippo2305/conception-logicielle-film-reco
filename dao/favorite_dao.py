@@ -56,7 +56,7 @@ class FavoriteDao:
             rows = cur.fetchall()
             return {int(r["id_film"]) for r in rows} if rows else set()
 
-    # ✅ Liste complète des favoris
+    # ✅ Liste complète des favoris (par id_user)
     def list_favorites(self, user_id: int) -> list[dict]:
         with get_connection() as conn:
             cur = conn.cursor()
@@ -69,6 +69,24 @@ class FavoriteDao:
                 ORDER BY fav.created_at DESC;
                 """,
                 (user_id,),
+            )
+            rows = cur.fetchall()
+            return [dict(r) for r in rows] if rows else []
+
+    # ✅ NOUVEAU : Liste complète des favoris par pseudo (sans id_user côté API)
+    def list_favorites_by_pseudo(self, pseudo: str) -> list[dict]:
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT f.*
+                FROM film f
+                JOIN favorites fav ON fav.id_film = f.id_film
+                JOIN users u ON u.id_user = fav.id_user
+                WHERE LOWER(u.pseudo) = LOWER(?)
+                ORDER BY fav.created_at DESC;
+                """,
+                (pseudo,),
             )
             rows = cur.fetchall()
             return [dict(r) for r in rows] if rows else []

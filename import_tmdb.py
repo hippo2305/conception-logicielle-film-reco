@@ -6,16 +6,29 @@ def main():
     init_db()
 
     fs = FilmService()
-    film = fs.import_from_tmdb("Titanic", nb_acteurs=5)
-    print(
-        "Inséré :",
-        film["id_film"],
-        film["titre"],
-        film["annee"],
-        film["realisateur"],
-        film["genres"],
-        film["casting"],
-    )
+
+    titres = [
+        "Titanic",
+        "Inception",
+        "Interstellar",
+        "The Dark Knight",
+        "Avatar",
+    ]
+
+    for titre in titres:
+        try:
+            film = fs.import_from_tmdb(titre, nb_acteurs=5)
+            print(
+                "Inséré :",
+                film["id_film"],
+                film["titre"],
+                film["annee"],
+                film["realisateur"],
+                film["genres"],
+                film["casting"],
+            )
+        except Exception as e:
+            print(f"Erreur pour {titre} :", e)
 
 
 if __name__ == "__main__":

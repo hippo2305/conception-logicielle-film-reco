@@ -1,64 +1,54 @@
+from __future__ import annotations
+
 from dao.film_dao import FilmDao
-
-
-def parse_genres(genres_str: str) -> list[str]:
-    if not genres_str:
-        return []
-    return [g.strip().lower() for g in genres_str.split(",")]
 
 
 class RecommendationService:
     """
-    Service responsible for computing movie recommendations.
+    Recommandations simples, sans ML :
+    - par titre : films dont le titre contient la requête
+    - par genre : films dont le champ 'genre' contient le genre
+    - si l'utilisateur choisit un film : recommander par genres du film
     """
 
     def __init__(self):
         self.film_dao = FilmDao()
 
-    def recommend_similar_movies_by_title(
-        self, reference_title: str, top_k: int = 5
-    ) -> list[dict]:
-        """
-        Recommend movies similar to a reference movie given its title.
-        """
-        reference_movie = self.film_dao.get_film_by_title(reference_title)
+    def recommend_by_title(self, query: str, limit: int = 10) -> list[dict]:
+        query = (query or "").strip().lower()
+        if not query:
+            return []
 
-        if not reference_movie:
-            raise ValueError(f"Movie '{reference_title}' not found in database")
+        films = self.film_dao.get_all_films() or []
+        res = [f for f in films if query in (f.get("titre") or "").lower()]
+        return res[:limit]
 
-        reference_id = reference_movie["id_film"]
+    def recommend_by_genre(self, genre: str, limit: int = 10) -> list[dict]:
+        genre = (genre or "").strip().lower()
+        if not genre:
+            return []
 
-        candidate_movies = self.film_dao.get_all_films(exclude=reference_id)
+        films = self.film_dao.get_all_films() or []
+        res = [f for f in films if genre in (f.get("genre") or "").lower()]
+        return res[:limit]
 
-        reference_genres = set(parse_genres(reference_movie["genre"]))
+    def recommend_from_film(self, id_film: int, limit: int = 10) -> list[dict]:
+        film = self.film_dao.get_film_by_id(id_film)
+        if not film:
+            return []
 
-        scored_movies: list[tuple[int, dict]] = []
+        # genres stockés comme "Action, Drama" etc.
+        genre_str = (film.get("genre") or "").lower()
+        genres = [g.strip() for g in genre_str.split(",") if g.strip()]
+        if not genres:
+            return []
 
-        for movie in candidate_movies:
-            score = 0
-            movie_genres = set(parse_genres(movie["genre"]))
+        films = self.film_dao.get_all_films() or []
 
-            # Genre similarity
-            score += 2 * len(reference_genres & movie_genres)
+        # même genre que le film choisi, mais exclure le film lui-même
+        def matches_any_genre(f: dict) -> bool:
+            fg = (f.get("genre") or "").lower()
+            return any(g in fg for g in genres)
 
-            # Same director
-            if (
-                movie["realisateur"]
-                and reference_movie["realisateur"]
-                and movie["realisateur"] == reference_movie["realisateur"]
-            ):
-                score += 3
-
-            # Release year proximity
-            if (
-                movie["annee"]
-                and reference_movie["annee"]
-                and abs(movie["annee"] - reference_movie["annee"]) <= 5
-            ):
-                score += 1
-
-            scored_movies.append((score, movie))
-
-        scored_movies.sort(key=lambda x: x[0], reverse=True)
-
-        return [movie for score, movie in scored_movies[:top_k]]
+        res = [f for f in films if f.get("id_film") != id_film and matches_any_genre(f)]
+        return res[:limit]
