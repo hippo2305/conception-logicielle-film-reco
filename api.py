@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import hashlib
-import secrets
+import os
 from typing import Annotated
 
 from fastapi import FastAPI, Form, Query
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from starlette.status import HTTP_303_SEE_OTHER
 import uvicorn
 
@@ -13,47 +14,67 @@ from dao.db_connection import get_connection
 from dao.favorite_dao import FavoriteDao
 from dao.film_dao import FilmDao
 from dao.init_db import init_db
-from dao.user_dao import UserDao
+from service.auth_service import AuthService
 from service.recommendation_service import RecommendationService
 
 
-ROOT_PATH = "/proxy/8000"
+ROOT_PATH = os.getenv("ROOT_PATH", "/proxy/8000")  # "" en local si besoin
 
-
-# -----------------------
-# Password helpers
-# -----------------------
-def hash_password(password: str, salt: str) -> str:
-    dk = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 200_000)
-    return dk.hex()
-
-
-def make_password_hash(password: str) -> str:
-    salt = secrets.token_hex(16)
-    return f"pbkdf2${salt}${hash_password(password, salt)}"
-
-
-def verify_password(password: str, stored: str) -> bool:
-    try:
-        algo, salt, h = stored.split("$", 2)
-        if algo != "pbkdf2":
-            return False
-        return hash_password(password, salt) == h
-    except Exception:
-        return False
-
-
-# -----------------------
-# Init app
-# -----------------------
 init_db()
 
-app = FastAPI(root_path=ROOT_PATH, title="MovieReco API (pseudo + password)")
+app = FastAPI(root_path=ROOT_PATH, title="MovieReco API")
 
 film_dao = FilmDao()
 fav_dao = FavoriteDao()
-user_dao = UserDao()
 reco_service = RecommendationService()
+auth = AuthService()
+
+
+# ============================================================
+# Swagger: enlever les réponses 422 "Validation Error" dans /docs
+# ============================================================
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    schema = get_openapi(
+        title=app.title,
+        version="1.0.0",
+        routes=app.routes,
+        description=app.description,
+    )
+
+    for path in schema.get("paths", {}).values():
+        for method in path.values():
+            responses = method.get("responses", {})
+            responses.pop("422", None)
+
+    app.openapi_schema = schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
+
+
+# ============================================================
+# Models (pour nettoyer "Example Value" dans Swagger)
+# ============================================================
+class OkResponse(BaseModel):
+    status: str = "ok"
+
+
+class ErrorResponse(BaseModel):
+    error: str
+
+
+class SignupResponse(BaseModel):
+    status: str = "ok"
+    pseudo: str
+
+
+class FavoriteResponse(BaseModel):
+    status: str = "ok"
+    titre: str
 
 
 @app.get("/", include_in_schema=False)
@@ -64,42 +85,28 @@ async def redirect_to_docs():
 # ============================================================
 # USERS
 # ============================================================
-@app.post("/users/signup")
+@app.post(
+    "/users/signup",
+    response_model=SignupResponse,
+    responses={400: {"model": ErrorResponse}},
+)
 def signup(
     pseudo: Annotated[str, Form()],
     password: Annotated[str, Form()],
+    email: Annotated[str | None, Form()] = None,
 ):
-    if not pseudo:
-        return {"error": "Pseudo vide"}
-    if len(password) < 4:
-        return {"error": "Mot de passe trop court"}
-
-    if user_dao.get_user_row_by_pseudo(pseudo):
-        return {"error": "Pseudo déjà utilisé"}
-
-    password_hash = make_password_hash(password)
-
-    ok = user_dao.create_minimal(
-        pseudo=pseudo,
-        password_hash=password_hash,
-        email=None,
-        role="client",
-        listfilms="[]",
-    )
-
-    if not ok:
-        return {"error": "Impossible de créer l'utilisateur"}
-
-    return {"status": "ok", "pseudo": pseudo}
+    try:
+        auth.signup(pseudo=pseudo, password=password, email=email)
+        return {"status": "ok", "pseudo": pseudo}
+    except ValueError as e:
+        return {"error": str(e)}
 
 
 def authenticate_user(pseudo: str, password: str):
-    user = user_dao.get_user_row_by_pseudo(pseudo)
-    if not user:
+    try:
+        return auth.login(pseudo=pseudo, password=password)
+    except ValueError:
         return None
-    if not verify_password(password, user["password"]):
-        return None
-    return user
 
 
 # ============================================================
@@ -117,26 +124,40 @@ def list_films(
 # ============================================================
 # FAVORIS (AUTH REQUIRED via pseudo + password)
 # ============================================================
-@app.post("/favorites/add")
+
+
+@app.post(
+    "/favorites/add",
+    response_model=FavoriteResponse,
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
 def add_favorite(
     pseudo: Annotated[str, Form()],
     password: Annotated[str, Form()],
     titre: Annotated[str, Form()],
     annee: Annotated[int | None, Form()] = None,
 ):
+    # 1) Auth via pseudo+password (API garde pseudo)
     user = authenticate_user(pseudo, password)
     if not user:
         return {"error": "Authentification échouée"}
 
+    # 2) Resolve titre(+annee) -> film_id (API garde titre)
     film = film_dao.get_film_by_title(titre, annee=annee)
     if not film:
         return {"error": f"Film introuvable: {titre}"}
 
-    fav_dao.add_favorite(user["id_user"], film["id_film"])
+    # 3) DAO attend (id_user, id_film)
+    fav_dao.add_favorite(user_id=user["id_user"], film_id=film["id_film"])
+
     return {"status": "ok", "titre": film["titre"]}
 
 
-@app.post("/favorites/remove")
+@app.post(
+    "/favorites/remove",
+    response_model=FavoriteResponse,
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
 def remove_favorite(
     pseudo: Annotated[str, Form()],
     password: Annotated[str, Form()],
@@ -151,20 +172,26 @@ def remove_favorite(
     if not film:
         return {"error": f"Film introuvable: {titre}"}
 
-    fav_dao.remove_favorite(user["id_user"], film["id_film"])
+    fav_dao.remove_favorite(user_id=user["id_user"], film_id=film["id_film"])
     return {"status": "ok", "titre": film["titre"]}
 
 
-@app.get("/favorites")
-def list_favorites(
-    pseudo: str,
-    password: str,
-):
+@app.get("/favorites", responses={401: {"model": ErrorResponse}})
+def list_favorites(pseudo: str, password: str):
     user = authenticate_user(pseudo, password)
     if not user:
         return {"error": "Authentification échouée"}
 
-    return fav_dao.list_favorites(user["id_user"])
+    # Ton DAO retourne déjà f.* (films)
+    return fav_dao.list_favorites(user_id=user["id_user"])
+
+
+# ============================================================
+# RECOMMENDATIONS (PUBLIC)
+# ============================================================
+@app.get("/recommendations/by_genre")
+def recommendations_by_genre(genre: str, limit: int = 10):
+    return reco_service.recommend_by_genre(genre, limit=limit)
 
 
 # ============================================================
@@ -204,19 +231,6 @@ def stats_favorites_by_genre():
         )
         rows = cur.fetchall()
         return [dict(r) for r in rows] if rows else []
-
-
-# ============================================================
-# RECOMMENDATIONS (PUBLIC)
-# ============================================================
-@app.get("/recommendations/by_title")
-def recommendations_by_title(titre: str, limit: int = 10):
-    return reco_service.recommend_by_title(titre, limit=limit)
-
-
-@app.get("/recommendations/by_genre")
-def recommendations_by_genre(genre: str, limit: int = 10):
-    return reco_service.recommend_by_genre(genre, limit=limit)
 
 
 if __name__ == "__main__":

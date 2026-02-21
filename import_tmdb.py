@@ -13,6 +13,21 @@ def main():
         "Interstellar",
         "The Dark Knight",
         "Avatar",
+        "Gladiator",
+        "The Matrix",
+        "Forrest Gump",
+        "The Shawshank Redemption",
+        "The Godfather",
+        "Pulp Fiction",
+        "Fight Club",
+        "The Lord of the Rings: The Fellowship of the Ring",
+        "The Lord of the Rings: The Two Towers",
+        "The Lord of the Rings: The Return of the King",
+        "Star Wars: Episode IV - A New Hope",
+        "Jurassic Park",
+        "The Lion King",
+        "The Prestige",
+        "Parasite",
     ]
 
     for titre in titres:

@@ -1,3 +1,4 @@
+import os
 import traceback
 from typing import Annotated
 
@@ -13,10 +14,13 @@ from dao.init_db import init_db
 from service.auth_service import AuthService
 
 
+ROOT_PATH = os.getenv("ROOT_PATH", "")  # "" en local, "/proxy/8001" si besoin
+SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY", "CHANGE_ME_SECRET_KEY")
+
 init_db()
 
-app = FastAPI(title="MovieReco Web")
-app.add_middleware(SessionMiddleware, secret_key="CHANGE_ME_SECRET_KEY")
+app = FastAPI(root_path=ROOT_PATH, title="MovieReco Web")
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
 
 templates = Jinja2Templates(directory="templates")
 
@@ -96,7 +100,6 @@ def films_page(request: Request, q: str | None = Query(default=None)):
     try:
         films = film_dao.get_all_films() or []
 
-        # Filtrage (simple) côté serveur
         if q and q.strip():
             qq = q.strip().lower()
             films = [f for f in films if qq in (f.get("titre") or "").lower()]
