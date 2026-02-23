@@ -8,15 +8,14 @@ class FilmService:
     """
     Service métier pour la gestion des films.
     """
-
     def __init__(self):
         self.tmdb_service = TmdbService()
         self.film_dao = FilmDAO()
 
     def import_from_tmdb(self, query: str, nb_acteurs: int = 5) -> Film:
-        film = self.tmdb_service.get_movie_filtered(query=query, nb_acteurs=nb_acteurs)
-        self.film_dao.insert_film(film)
-        return film
+       film = self.tmdb_service.get_movie_filtered(query=query, nb_acteurs=nb_acteurs)
+       self.save_film(film)
+       return film
 
     # -----------------------------
     # Instanciation

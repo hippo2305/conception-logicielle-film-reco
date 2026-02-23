@@ -2,8 +2,6 @@ import os
 
 from dotenv import load_dotenv
 
-from src.service.tmdb_service import TmdbService
-
 
 class MAIN:
     @staticmethod
@@ -42,4 +40,4 @@ class MAIN:
         return env
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
