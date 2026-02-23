@@ -1,17 +1,28 @@
 from pathlib import Path
-import sqlite3
+
+from src.dao.db_connection import DBConnection, LocalDBConnection
 
 
 DB_PATH = "app.db"
 SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
+class InitDB:
+    def get_schema(self, path) -> str:
+        with open(path, encoding="utf-8") as f:
+            schema = f.read()
+        return schema
 
-def init_db() -> None:
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
+    def init_db(self) -> None:
+        query = self.get_schema(SCHEMA_PATH)
 
-    with open(SCHEMA_PATH, encoding="utf-8") as f:
-        cur.executescript(f.read())
+        with DBConnection().connection as connection, connection.cursor() as cursor:
+            cursor.execute(query)
+            connection.commit()
 
-    conn.commit()
-    conn.close()
+    def init_localdb(self) -> None:
+        query = self.get_schema(SCHEMA_PATH)
+
+        with LocalDBConnection().get_connection() as connection:
+            cursor = connection.cursor()
+            cursor.executescript(query.replace("SERIAL", "INTEGER"))
+            connection.commit()

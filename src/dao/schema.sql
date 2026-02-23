@@ -1,38 +1,38 @@
-CREATE TABLE IF NOT EXISTS film (
-  id_film INTEGER PRIMARY KEY,
-  titre TEXT NOT NULL,
-  annee INTEGER,
-  realisateur TEXT,
-  genre TEXT
-);
+CREATE TABLE IF NOT EXISTS USERS (
+  id_user SERIAL PRIMARY KEY,
+  pseudo VARCHAR(255) NOT NULL,
+  mdp VARCHAR(255) NOT NULL,
+  UNIQUE(pseudo, mdp)
+  );
 
-CREATE TABLE IF NOT EXISTS actor (
-  id_actor INTEGER PRIMARY KEY AUTOINCREMENT,
-  nom TEXT NOT NULL UNIQUE
-);
+CREATE TABLE IF NOT EXISTS FILM (
+  id_film SERIAL PRIMARY KEY,
+  titre VARCHAR(255) NOT NULL,
+  realisateur VARCHAR(255) NOT NULL,
+  annee INT,
+  genre VARCHAR(255) NOT NULL,
+  UNIQUE(titre, realisateur)
+  );
 
-CREATE TABLE IF NOT EXISTS casting (
-  id_film INTEGER NOT NULL,
-  id_actor INTEGER NOT NULL,
-  PRIMARY KEY (id_film, id_actor),
-  FOREIGN KEY (id_film) REFERENCES film(id_film) ON DELETE CASCADE,
-  FOREIGN KEY (id_actor) REFERENCES actor(id_actor) ON DELETE CASCADE
-);
+CREATE TABLE IF NOT EXISTS ACTOR (
+  id_actor SERIAL PRIMARY KEY,
+  nom VARCHAR(255) NOT NULL,
+  prenom VARCHAR(255) NOT NULL,
+  UNIQUE(nom, prenom)
+  );
 
-CREATE TABLE IF NOT EXISTS users (
-  id_user INTEGER PRIMARY KEY AUTOINCREMENT,
-  pseudo TEXT NOT NULL UNIQUE,
-  email TEXT,
-  listfilms TEXT NOT NULL DEFAULT '[]',
-  password TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'client'
-);
-
-CREATE TABLE IF NOT EXISTS favorites (
-  id_user INTEGER NOT NULL,
-  id_film INTEGER NOT NULL,
-  created_at TEXT DEFAULT (datetime('now')),
+CREATE TABLE IF NOT EXISTS FAVORIS (
+  id_user INT NOT NULL,
+  id_film INT NOT NULL,
   PRIMARY KEY (id_user, id_film),
-  FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE,
-  FOREIGN KEY (id_film) REFERENCES film(id_film) ON DELETE CASCADE
-);
+  FOREIGN KEY (id_user) REFERENCES USERS(id_user) ON DELETE CASCADE,
+  FOREIGN KEY (id_film) REFERENCES FILM(id_film) ON DELETE CASCADE
+  );
+
+CREATE TABLE IF NOT EXISTS CASTING (
+  id_film INT NOT NULL,
+  id_actor INT NOT NULL,
+  PRIMARY KEY (id_film, id_actor),
+  FOREIGN KEY (id_film) REFERENCES FILM(id_film) ON DELETE CASCADE,
+  FOREIGN KEY (id_actor) REFERENCES ACTOR(id_actor) ON DELETE CASCADE
+  );
