@@ -46,7 +46,6 @@ def init_db() -> None:
     );
     """)
 
-    # ⭐ Table favorites
     cur.execute("""
     CREATE TABLE IF NOT EXISTS favorites (
       id_user INTEGER NOT NULL,

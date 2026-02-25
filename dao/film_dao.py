@@ -3,16 +3,12 @@ from dao.db_connection import get_connection
 
 class FilmDao:
     """
-    Data Access Object for films.
-    Handles persistence and retrieval of film data.
+    DAO SQLite - table film (+ actor + casting via insert_film).
     """
 
-    # -----------------------------
-    # INSERT / UPDATE
-    # -----------------------------
     def insert_film(self, film: dict) -> None:
         """
-        Expected film dict:
+        film dict attendu:
         {
           "id_film": int,
           "titre": str,
@@ -22,7 +18,10 @@ class FilmDao:
           "casting": [str, ...]
         }
         """
-        genres_str = ", ".join(film.get("genres", []))
+        if not film or film.get("id_film") is None or not film.get("titre"):
+            raise ValueError("Film invalide (id_film/titre manquant)")
+
+        genres_str = ", ".join([g for g in (film.get("genres") or []) if g])
         annee = film.get("annee")
 
         with get_connection() as conn:
@@ -40,7 +39,7 @@ class FilmDao:
                     genre = excluded.genre
                 """,
                 (
-                    film["id_film"],
+                    int(film["id_film"]),
                     film["titre"],
                     annee,
                     film.get("realisateur"),
@@ -49,11 +48,11 @@ class FilmDao:
             )
 
             # 2) Actors + casting relation
-            for nom in film.get("casting", []):
+            for nom in film.get("casting") or []:
+                nom = (nom or "").strip()
                 if not nom:
                     continue
 
-                # Insert actor if not exists
                 cur.execute(
                     """
                     INSERT INTO actor (nom)
@@ -63,33 +62,23 @@ class FilmDao:
                     (nom,),
                 )
 
-                # Retrieve actor ID
                 cur.execute("SELECT id_actor FROM actor WHERE nom = ?", (nom,))
                 row = cur.fetchone()
                 if not row:
                     continue
 
-                id_actor = row["id_actor"]
+                id_actor = int(row["id_actor"])
 
-                # Insert casting link
                 cur.execute(
                     """
                     INSERT INTO casting (id_film, id_actor)
                     VALUES (?, ?)
                     ON CONFLICT(id_film, id_actor) DO NOTHING
                     """,
-                    (film["id_film"], id_actor),
+                    (int(film["id_film"]), id_actor),
                 )
 
-            conn.commit()
-
-    # -----------------------------
-    # READ
-    # -----------------------------
     def get_film_by_id(self, id_film: int) -> dict | None:
-        """
-        Retrieve a film by its ID.
-        """
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute("SELECT * FROM film WHERE id_film = ?;", (id_film,))
@@ -97,10 +86,6 @@ class FilmDao:
             return dict(row) if row else None
 
     def get_film_by_title(self, title: str, annee: int | None = None) -> dict | None:
-        """
-        Retrieve a film by its title (case-insensitive).
-        If annee is provided, disambiguates identical titles.
-        """
         title = (title or "").strip()
         if not title:
             return None
@@ -133,9 +118,6 @@ class FilmDao:
             return dict(row) if row else None
 
     def get_all_films(self, exclude: int | None = None) -> list[dict]:
-        """
-        Retrieve all films, optionally excluding one by ID.
-        """
         with get_connection() as conn:
             cur = conn.cursor()
 
@@ -146,33 +128,3 @@ class FilmDao:
 
             rows = cur.fetchall()
             return [dict(row) for row in rows] if rows else []
-
-    # ✅ NOUVELLE : recherche par titre (contains) et/ou genre (contains)
-    def search_films(
-        self,
-        q: str | None = None,
-        genre: str | None = None,
-        limit: int = 100,
-    ) -> list[dict]:
-        q = (q or "").strip()
-        genre = (genre or "").strip()
-
-        sql = "SELECT * FROM film WHERE 1=1"
-        params: list = []
-
-        if q:
-            sql += " AND LOWER(titre) LIKE LOWER(?)"
-            params.append(f"%{q}%")
-
-        if genre:
-            sql += " AND LOWER(genre) LIKE LOWER(?)"
-            params.append(f"%{genre}%")
-
-        sql += " ORDER BY titre LIMIT ?"
-        params.append(limit)
-
-        with get_connection() as conn:
-            cur = conn.cursor()
-            cur.execute(sql, tuple(params))
-            rows = cur.fetchall()
-            return [dict(r) for r in rows] if rows else []

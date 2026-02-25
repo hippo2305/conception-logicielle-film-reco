@@ -12,22 +12,21 @@ import uvicorn
 
 from dao.db_connection import get_connection
 from dao.favorite_dao import FavoriteDao
-from dao.film_dao import FilmDao
 from dao.init_db import init_db
 from service.auth_service import AuthService
-from service.recommendation_service import RecommendationService
+from service.favorites_service import FavoritesService
+from service.tmdb_service import TmdbService
 
 
 ROOT_PATH = os.getenv("ROOT_PATH", "/proxy/8000")  # "" en local si besoin
-
 init_db()
 
 app = FastAPI(root_path=ROOT_PATH, title="MovieReco API")
 
-film_dao = FilmDao()
-fav_dao = FavoriteDao()
-reco_service = RecommendationService()
 auth = AuthService()
+tmdb = TmdbService()
+fav_dao = FavoriteDao()
+fav_service = FavoritesService()
 
 
 # ============================================================
@@ -57,12 +56,8 @@ app.openapi = custom_openapi
 
 
 # ============================================================
-# Models (pour nettoyer "Example Value" dans Swagger)
+# Models
 # ============================================================
-class OkResponse(BaseModel):
-    status: str = "ok"
-
-
 class ErrorResponse(BaseModel):
     error: str
 
@@ -72,14 +67,26 @@ class SignupResponse(BaseModel):
     pseudo: str
 
 
-class FavoriteResponse(BaseModel):
+class FavoriteAddResponse(BaseModel):
     status: str = "ok"
+    id_film: int
     titre: str
+    annee: int | None = None
 
 
 @app.get("/", include_in_schema=False)
 async def redirect_to_docs():
     return RedirectResponse(url="/docs", status_code=HTTP_303_SEE_OTHER)
+
+
+# ============================================================
+# AUTH helper
+# ============================================================
+def authenticate_user(pseudo: str, password: str):
+    try:
+        return auth.login(pseudo=pseudo, password=password)
+    except ValueError:
+        return None
 
 
 # ============================================================
@@ -102,78 +109,88 @@ def signup(
         return {"error": str(e)}
 
 
-def authenticate_user(pseudo: str, password: str):
-    try:
-        return auth.login(pseudo=pseudo, password=password)
-    except ValueError:
-        return None
+# ============================================================
+# TMDB (PUBLIC) - recherche live
+# ============================================================
+@app.get("/tmdb/search")
+def tmdb_search(
+    query: str = Query(..., min_length=1),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=50),
+):
+    return tmdb.search_movies_min(query=query, page=page, limit=limit)
+
+
+@app.get("/tmdb/movie")
+def tmdb_movie_details(
+    movie_id: int = Query(..., ge=1),
+    nb_acteurs: int = Query(default=5, ge=0, le=20),
+):
+    # renvoie un dict compatible film_dao.insert_film()
+    return tmdb.get_movie_full(movie_id=movie_id, nb_acteurs=nb_acteurs)
 
 
 # ============================================================
 # FILMS (PUBLIC)
+# IMPORTANT : maintenant /films = recherche TMDB (plus SQLite)
 # ============================================================
 @app.get("/films")
 def list_films(
-    titre: str | None = Query(default=None),
-    genre: str | None = Query(default=None),
-    limit: int = Query(default=100),
+    titre: str = Query(..., min_length=1),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=50),
 ):
-    return film_dao.search_films(q=titre, genre=genre, limit=limit)
+    return tmdb.search_movies_min(query=titre, page=page, limit=limit)
 
 
 # ============================================================
 # FAVORIS (AUTH REQUIRED via pseudo + password)
+# Favori = film choisi dans TMDB (movie_id)
 # ============================================================
-
-
 @app.post(
-    "/favorites/add",
-    response_model=FavoriteResponse,
-    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    "/favorites/add_tmdb",
+    response_model=FavoriteAddResponse,
+    responses={401: {"model": ErrorResponse}},
 )
-def add_favorite(
+def add_favorite_tmdb(
     pseudo: Annotated[str, Form()],
     password: Annotated[str, Form()],
-    titre: Annotated[str, Form()],
-    annee: Annotated[int | None, Form()] = None,
-):
-    # 1) Auth via pseudo+password (API garde pseudo)
-    user = authenticate_user(pseudo, password)
-    if not user:
-        return {"error": "Authentification échouée"}
-
-    # 2) Resolve titre(+annee) -> film_id (API garde titre)
-    film = film_dao.get_film_by_title(titre, annee=annee)
-    if not film:
-        return {"error": f"Film introuvable: {titre}"}
-
-    # 3) DAO attend (id_user, id_film)
-    fav_dao.add_favorite(user_id=user["id_user"], film_id=film["id_film"])
-
-    return {"status": "ok", "titre": film["titre"]}
-
-
-@app.post(
-    "/favorites/remove",
-    response_model=FavoriteResponse,
-    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
-)
-def remove_favorite(
-    pseudo: Annotated[str, Form()],
-    password: Annotated[str, Form()],
-    titre: Annotated[str, Form()],
-    annee: Annotated[int | None, Form()] = None,
+    movie_id: Annotated[int, Form()],  # TMDB id
+    nb_acteurs: Annotated[int, Form()] = 5,
 ):
     user = authenticate_user(pseudo, password)
     if not user:
         return {"error": "Authentification échouée"}
 
-    film = film_dao.get_film_by_title(titre, annee=annee)
-    if not film:
-        return {"error": f"Film introuvable: {titre}"}
+    film = fav_service.add_favorite_from_tmdb(
+        user_id=user["id_user"],
+        movie_id=int(movie_id),
+        nb_acteurs=int(nb_acteurs),
+    )
 
-    fav_dao.remove_favorite(user_id=user["id_user"], film_id=film["id_film"])
-    return {"status": "ok", "titre": film["titre"]}
+    return {
+        "status": "ok",
+        "id_film": film["id_film"],
+        "titre": film["titre"],
+        "annee": film.get("annee"),
+    }
+
+
+@app.post(
+    "/favorites/remove_tmdb",
+    responses={401: {"model": ErrorResponse}},
+)
+def remove_favorite_tmdb(
+    pseudo: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    movie_id: Annotated[int, Form()],
+):
+    user = authenticate_user(pseudo, password)
+    if not user:
+        return {"error": "Authentification échouée"}
+
+    fav_service.remove_favorite(user_id=user["id_user"], movie_id=int(movie_id))
+    return {"status": "ok"}
 
 
 @app.get("/favorites", responses={401: {"model": ErrorResponse}})
@@ -182,20 +199,11 @@ def list_favorites(pseudo: str, password: str):
     if not user:
         return {"error": "Authentification échouée"}
 
-    # Ton DAO retourne déjà f.* (films)
     return fav_dao.list_favorites(user_id=user["id_user"])
 
 
 # ============================================================
-# RECOMMENDATIONS (PUBLIC)
-# ============================================================
-@app.get("/recommendations/by_genre")
-def recommendations_by_genre(genre: str, limit: int = 10):
-    return reco_service.recommend_by_genre(genre, limit=limit)
-
-
-# ============================================================
-# STATS (PUBLIC)
+# STATS (PUBLIC) - sur SQLite favorites + film
 # ============================================================
 @app.get("/stats/top_favorited")
 def stats_top_favorited(limit: int = 10):
@@ -203,7 +211,8 @@ def stats_top_favorited(limit: int = 10):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT f.titre, f.annee, COUNT(*) AS nb_favoris
+            SELECT f.id_film, f.titre, f.annee, f.realisateur, f.genre,
+                   COUNT(*) AS nb_favoris
             FROM favorites fav
             JOIN film f ON f.id_film = fav.id_film
             GROUP BY f.id_film
@@ -216,21 +225,39 @@ def stats_top_favorited(limit: int = 10):
         return [dict(r) for r in rows] if rows else []
 
 
-@app.get("/stats/favorites_by_genre")
-def stats_favorites_by_genre():
+# ============================================================
+# ✅ NOUVEAU : Top films favoris par genre saisi par l'utilisateur
+# ============================================================
+@app.get("/stats/top_favorited_by_genre")
+def stats_top_favorited_by_genre(
+    genre: str = Query(..., min_length=1),
+    limit: int = Query(default=10, ge=1, le=100),
+):
+    """
+    Renvoie les films les plus ajoutés en favoris pour un genre donné.
+    Comme film.genre est une chaîne type "Action, Drama", on filtre en LIKE (contains),
+    insensible à la casse.
+    """
+    g = genre.strip().lower()
+
     with get_connection() as conn:
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT f.genre, COUNT(*) AS nb_favoris
+            SELECT f.id_film, f.titre, f.annee, f.realisateur, f.genre,
+                   COUNT(*) AS nb_favoris
             FROM favorites fav
             JOIN film f ON f.id_film = fav.id_film
-            GROUP BY f.genre
-            ORDER BY nb_favoris DESC;
-            """
+            WHERE LOWER(f.genre) LIKE ?
+            GROUP BY f.id_film
+            ORDER BY nb_favoris DESC
+            LIMIT ?;
+            """,
+            (f"%{g}%", limit),
         )
         rows = cur.fetchall()
-        return [dict(r) for r in rows] if rows else []
+
+    return [dict(r) for r in rows] if rows else []
 
 
 if __name__ == "__main__":

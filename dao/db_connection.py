@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-import os
 import sqlite3
 
 
@@ -19,6 +18,3 @@ def get_connection():
         raise
     finally:
         conn.close()
-
-
-print("DB_PATH =", os.path.abspath(DB_PATH))
