@@ -27,7 +27,7 @@ class User:
             raise TypeError("L'email doit être une chaîne de caractères.")
         if not isinstance(psswd, str):
             raise TypeError("Le mot de passe doit être une chaîne de caractères.")
-        if not isinstance(listfilms, list):
+        if listfilms is not None and not isinstance(listfilms, list):
             raise TypeError("Le paramètre listfilms doit être une liste.")
 
         if not pseudo.strip():
@@ -42,7 +42,7 @@ class User:
         self.pseudo = pseudo.strip()
         self.email = email.strip().lower()
         self._psswd = psswd
-        self.listfilms = listfilms
+        self.listfilms = listfilms if listfilms is not None else []
 
     @property
     def psswd(self):
