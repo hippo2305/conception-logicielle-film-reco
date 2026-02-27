@@ -12,10 +12,12 @@ class FilmService:
         self.tmdb_service = TmdbService()
         self.film_dao = FilmDAO()
 
+    """
     def import_from_tmdb(self, query: str, nb_acteurs: int = 5) -> Film:
        film = self.tmdb_service.get_movie_filtered(query=query, nb_acteurs=nb_acteurs)
        self.save_film(film)
        return film
+    """
 
     # -----------------------------
     # Instanciation
@@ -56,9 +58,14 @@ class FilmService:
 
     def get_casting(self, film: Film) -> list[Actor]:
         """
-        Retourne le casting du film.
+        Récupère le casting d'un film.
+        Retourne simplement l'attribut casting de film si déjà renseigné, sinon va le chercher
+        dans la BDD.
         """
-        return film.casting
+        if film.casting:
+            return film.casting
+        else:
+            return self.film_dao.get_casting(film)
 
     # -----------------------------
     # Persistance

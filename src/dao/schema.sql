@@ -1,7 +1,9 @@
 CREATE TABLE IF NOT EXISTS USERS (
   id_user SERIAL PRIMARY KEY,
   pseudo VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
   mdp VARCHAR(255) NOT NULL,
+  user_role VARCHAR(255) NOT NULL,
   UNIQUE(pseudo, mdp)
   );
 

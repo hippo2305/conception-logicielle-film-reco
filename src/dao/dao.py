@@ -20,8 +20,6 @@ class DAO:
         else:
             self.init_db.init_localdb()
 
-
-
     def postgres(self):
         load_dotenv(override=True)
         if os.environ["POSTGRES"] == "False":
@@ -79,17 +77,38 @@ class DAO:
                 cursor.execute(query)
                 connection.commit()
 
-    def _del_data_table(self, nom_table: str | None = None) -> str | None:
+    def update_query(self, tablename, var, value, where=None, other=None):
+        query = f"UPDATE {tablename} SET {var} = {value}"
+        if where:
+            query += f" WHERE {where}"
+        if other:
+            query += f" {other}"
+        query += ";"
+
+        if self.postgres():
+            with DBConnection().connection as connection, connection.cursor() as cursor:
+                cursor.execute(query)
+                connection.commit()
+        else:
+            with LocalDBConnection().get_connection() as connection:
+                cursor = connection.cursor()
+                cursor.execute(query)
+                connection.commit()
+
+    def del_query(self, tablename: str = None, where: str = None) -> bool:
         """
         Vide la table donnée en argument en majuscule
         Si aucune table n'est spécifiée, toutes les tables de la DB sont vidées
         """
-        if nom_table in self.ordre_suppr_tables:
-            query = f"DELETE FROM {nom_table};"
-        if nom_table is None:
+        if tablename in self.ordre_suppr_tables:
+            query = f"DELETE FROM {tablename}"
+            if where:
+                query += f" WHERE {where}"
+            query += ";"
+        if tablename is None:
             query = ""
-            for nom_table in self.ordre_suppr_tables:
-                query += f"DELETE FROM {nom_table};"
+            for tablename in self.ordre_suppr_tables:
+                query += f"DELETE FROM {tablename};"
 
         if self.postgres():
             with DBConnection().connection as connection, connection.cursor() as cursor:
@@ -104,17 +123,17 @@ class DAO:
                 connection.commit()
                 return True
 
-    def _drop_table(self, nom_table: str | None = None) -> str | None:
+    def drop_table(self, tablename: str = None) -> bool:
         """
         Supprime la table donnée en argument en majuscule
         Si aucune table n'est spécifiée, toutes les tables de la DB sont supprimées
         """
-        if nom_table in self.ordre_suppr_tables:
-            query = f"DROP TABLE IF EXISTS {nom_table};"
-        if nom_table is None:
+        if tablename in self.ordre_suppr_tables:
+            query = f"DROP TABLE IF EXISTS {tablename};"
+        if tablename is None:
             query = ""
-            for nom_table in self.ordre_suppr_tables:
-                query += f"DROP TABLE IF EXISTS {nom_table};"
+            for tablename in self.ordre_suppr_tables:
+                query += f"DROP TABLE IF EXISTS {tablename};"
 
         if self.postgres():
             with DBConnection().connection as connection, connection.cursor() as cursor:

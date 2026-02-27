@@ -10,8 +10,8 @@ class User:
         L'adresse email de l'utilisateur.
     psswd : str
         Le mot de passe de l'utilisateur (hashé dans la couche service).
-    listfilms : list[film]
-        La liste des films déjà vus
+    listfilms : list[Film]
+        La liste des films déjà vus / favoris
     """
 
     def __init__(
@@ -19,7 +19,7 @@ class User:
         pseudo: str,
         email: str,
         psswd: str,
-        listfilms: list,
+        listfilms: list = None,
     ):
         if not isinstance(pseudo, str):
             raise TypeError("Le pseudo doit être une chaîne de caractères.")

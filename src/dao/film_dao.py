@@ -93,21 +93,27 @@ class FilmDAO:
         Ajoute le casting d'un film dans la BDD et ajoute les associations
         """
         try:
-            id_film = FilmDAO().get_id(film)
+            id_film = self.get_id(film)
 
             # Ajout des acteurs si non présents dans la BDD et récupération des id
             if film.casting:
                 for actor in film.casting:
-                    # N'ajout l'acteur que s'il n'est pas déjà dans la BDD
+                    # N'ajoute l'acteur que s'il n'est pas déjà dans la BDD
                     if not self.actor_dao.exists(actor):
                         self.actor_dao.add_actor(actor)
                     id_actor = self.actor_dao.get_id(actor)
 
-                    # Insertion dans la table d'association
-                    self.dao.insert_query(
-                        "CASTING", "id_film, id_actor", f"{id_film}, {id_actor}"
-                    )
-                    # /!\ À AJOUTER : vérification que l'association n'existe pas déjà
+                    # vérification que l'association n'existe pas déjà
+                    if self.dao.select_query(
+                        "CASTING",
+                        "1",
+                        where=f"id_film = '{id_film}' AND id_actor = '{id_actor}'",
+                    ) is None:
+
+                        # Insertion dans la table d'association
+                        self.dao.insert_query(
+                            "CASTING", "id_film, id_actor", f"{id_film}, {id_actor}"
+                        )
 
                 return True
 
@@ -187,36 +193,6 @@ class FilmDAO:
             return None
 
         return [Actor(row[1], row[2]) for row in rows] if rows else None
-
-    '''
-    @log
-    def get_by_user(self, user) -> list[Film]:
-        """
-        Retourne les films associés à un utilisateur.
-        Hypothèse : table de liaison aime(id_user, id_film).
-        """
-        # On accepte un objet User (user.id_user) ou directement l'id (str/int)
-        id_user = getattr(user, "id_user", user)
-
-        try:
-            with DBConnection().connection as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT f.titre, f.realisateur, f.genre
-                    FROM film f
-                    JOIN aime a ON a.id_film = f.id_film
-                    WHERE a.id_user = %(id_user)s
-                    ORDER BY f.titre ASC;
-                    """,
-                    {"id_user": id_user},
-                )
-                rows = cursor.fetchall()
-        except Exception as e:
-            logging.info(e)
-            raise
-
-        return [self._row_to_film(r) for r in rows] if rows else []
-    '''
 
     # -----------------------------
     # LISTES DISTINCTES (filtres)
