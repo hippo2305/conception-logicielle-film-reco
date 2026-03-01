@@ -3,18 +3,18 @@ from __future__ import annotations
 import os
 from typing import Annotated
 
+from dao.favorite_dao import FavoriteDao
 from fastapi import FastAPI, Form, Query
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
+from service.auth_service import AuthService
+from service.favorites_service import FavoritesService
 from starlette.status import HTTP_303_SEE_OTHER
 import uvicorn
 
 from dao.db_connection import get_connection
-from dao.favorite_dao import FavoriteDao
 from dao.init_db import init_db
-from service.auth_service import AuthService
-from service.favorites_service import FavoritesService
 from service.tmdb_service import TmdbService
 
 
