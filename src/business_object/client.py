@@ -28,7 +28,7 @@ class Client(User):
         pseudo: str,
         email: str,
         psswd: str,
-        listfilms: list,
+        listfilms: list = None,
         role: str = "client",
     ):
         super().__init__(pseudo, email, psswd, listfilms)

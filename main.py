@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
+
 class MAIN:
     @staticmethod
     def load_env() -> None:

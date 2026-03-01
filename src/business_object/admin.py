@@ -26,7 +26,7 @@ class Admin(User):
         pseudo: str,
         email: str,
         psswd: str,
-        listfilms: list,
+        listfilms: list = None,
         role: str = "admin",
     ):
         super().__init__(pseudo, email, psswd, listfilms)
