@@ -1,5 +1,6 @@
 Ce projet, développé dans le cadre du cours de conception logicielle de 2e année à
-l'ENSAI, consiste à : 
+l'ENSAI, consiste à :
+
 - Récupérer des données sur les films via l'API TMDB
 - Gérer une base de donnée des films préférés des utilisateurs
 - Fournir des fonctionnalités de recherche de film à partir de l'API
@@ -10,14 +11,14 @@ l'ENSAI, consiste à :
 
 Le dépôt étant publique, il faut avoir les accès nécessaires.
 
-``` bash
+```bash
 git clone https://github.com/hippo2305/conception-logicielle-film-reco.git
 cd conception-logicielle-film-reco
 ```
 
 ## 2. Installer l'environnement
 
-``` bash
+```bash
 uv sync
 ```
 
@@ -25,7 +26,7 @@ uv sync
 
 Créer un fichier `.env` à la racine du projet :
 
-``` env
+```env
 PPOSTGRES = False
 POSTGRES_HOST =
 POSTGRES_PORT =
@@ -41,19 +42,19 @@ TMDB_API_TOKEN =
 
 - **Dans le terminal**
 
-``` bash
+```bash
 uv run pytest
 ```
-## 5. Lancer l'application 
 
-``` bash
+## 5. Lancer l'application
+
+```bash
 uv run python main.py
 ```
 
 - **Création automatique de l’utilisateur administrateur**
 
 Lors du premier lancement du programme (`python main.py`), un utilisateur administrateur est automatiquement créé dans la base de données s’il n’existe pas déjà.
-
 
 Ce compte permet d’accéder aux fonctionnalités réservées à l’administrateur dès la première exécution du projet étant donné qu'il n'y a pas de superusers.
 
