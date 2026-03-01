@@ -3,7 +3,7 @@ from src.dao.actor_dao import ActorDAO
 from src.dao.dao import DAO
 
 
-DAO()._drop_table()
+DAO().drop_table()
 
 test_actor1 = Actor("Dicaprio", "Leonardo")
 test_actor2 = Actor("Cruise", "Tom")

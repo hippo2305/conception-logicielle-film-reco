@@ -127,7 +127,7 @@ class ActorDAO:
         Récupère tous les films dans lesquel a joué un acteur
         """
         try:
-            # Vérifie si le film existe
+            # Vérifie si l'acteur'
             if not self.exists(actor):
                 logging.info(f"L'acteur {actor.prenom} {actor.nom} n'existe pas")
                 return None

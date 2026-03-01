@@ -1,10 +1,9 @@
 from src.dao.dao import DAO
-from src.dao.film_dao import FilmDAO
 from src.service.actor_service import ActorService
 from src.service.film_service import FilmService
 
 
-DAO()._drop_table()
+DAO().drop_table()
 
 actor1 = ActorService().instantiate_actor("Hamill", "Mark")
 
@@ -45,17 +44,17 @@ FilmService().save_film(film2)
 print(f"Films avec {actor1.prenom} {actor1.nom}")
 films = ActorService().get_films(actor1)
 for film in films:
-    FilmService().add_casting(film, FilmDAO().get_casting(film))
+    FilmService().add_casting(film, FilmService().get_casting(film))
     print(film)
 
-actors1 = FilmDAO().get_casting(films[0])
+actors1 = FilmService().get_casting(films[0])
 
 print("")
 print(f"Acteurs de {films[0].titre}")
 for actor in actors1:
     print(actor)
 
-actors2 = FilmDAO().get_casting(films[1])
+actors2 = FilmService().get_casting(films[1])
 
 print("")
 print(f"Acteurs de {films[1].titre}")
