@@ -35,10 +35,10 @@ def mock_requests_get(monkeypatch):
 # __init__
 # =====================================================
 def test_init_raises_when_api_key_missing(monkeypatch):
-    monkeypatch.delenv("TMDB_API_KEY", raising=False)
+    monkeypatch.setenv("TMDB_API_KEY", "")
     monkeypatch.setenv("TMDB_BASE_URL", "https://api.themoviedb.org/3")
 
-    with pytest.raises(RuntimeError, match="TMDB_API_KEY manquante"):
+    with pytest.raises(RuntimeError, match="Clé TMDB_API_KEY manquante"):
         TmdbService()
 
 
