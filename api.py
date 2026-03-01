@@ -3,19 +3,17 @@ from __future__ import annotations
 import os
 from typing import Annotated
 
-from dao.favorite_dao import FavoriteDao
 from fastapi import FastAPI, Form, Query
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-from service.auth_service import AuthService
-from service.favorites_service import FavoritesService
 from starlette.status import HTTP_303_SEE_OTHER
 import uvicorn
 
-from dao.db_connection import get_connection
-from dao.init_db import init_db
-from service.tmdb_service import TmdbService
+from src.client.film_client import FilmClient
+from src.client.user_client import UserClient
+from src.dao.db_connection import get_connection
+from src.dao.init_db import init_db
 
 
 ROOT_PATH = os.getenv("ROOT_PATH", "/proxy/8000")  # "" en local si besoin
@@ -23,11 +21,8 @@ init_db()
 
 app = FastAPI(root_path=ROOT_PATH, title="MovieReco API")
 
-auth = AuthService()
-tmdb = TmdbService()
-fav_dao = FavoriteDao()
-fav_service = FavoritesService()
-
+user_client = UserClient()
+film_client = FilmClient()
 
 # ============================================================
 # Swagger: enlever les réponses 422 "Validation Error" dans /docs
@@ -84,7 +79,7 @@ async def redirect_to_docs():
 # ============================================================
 def authenticate_user(pseudo: str, password: str):
     try:
-        return auth.login(pseudo=pseudo, password=password)
+        return user_client.login(pseudo, password)
     except ValueError:
         return None
 
@@ -103,7 +98,7 @@ def signup(
     email: Annotated[str | None, Form()] = None,
 ):
     try:
-        auth.signup(pseudo=pseudo, password=password, email=email)
+        user_client.signup(pseudo, email, password)
         return {"status": "ok", "pseudo": pseudo}
     except ValueError as e:
         return {"error": str(e)}
@@ -118,7 +113,7 @@ def tmdb_search(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
-    return tmdb.search_movies_min(query=query, page=page, limit=limit)
+    return tmdb_service.search_movies_min(query=query, page=page, limit=limit)
 
 
 @app.get("/tmdb/movie")
@@ -127,7 +122,7 @@ def tmdb_movie_details(
     nb_acteurs: int = Query(default=5, ge=0, le=20),
 ):
     # renvoie un dict compatible film_dao.insert_film()
-    return tmdb.get_movie_full(movie_id=movie_id, nb_acteurs=nb_acteurs)
+    return tmdb_service.get_movie_full(movie_id=movie_id, nb_acteurs=nb_acteurs)
 
 
 # ============================================================
@@ -140,7 +135,7 @@ def list_films(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=50),
 ):
-    return tmdb.search_movies_min(query=titre, page=page, limit=limit)
+    return tmdb_service.search_movies_min(query=titre, page=page, limit=limit)
 
 
 # ============================================================
