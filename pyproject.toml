@@ -15,6 +15,9 @@ name = "conception-logicielle-film-reco"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
+    "bcrypt>=5.0.0",
+    "psycopg2-binary>=2.9.11",
+    "pytest-cov>=7.0.0",
     "python-dotenv>=1.2.1",
     "requests>=2.32.5",
 ]
