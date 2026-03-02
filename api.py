@@ -19,6 +19,8 @@ ROOT_PATH = os.getenv("ROOT_PATH", "/proxy/8000")  # "" en local si besoin
 app = FastAPI(root_path=ROOT_PATH, title="MovieReco API")
 
 dao = DAO()
+dao.drop_table()
+dao = DAO()
 user_client = UserClient()
 film_client = FilmClient()
 
@@ -158,66 +160,6 @@ def remove_favorite_tmdb(
 def get_favorites(pseudo: str, password: str):
     return user_client.get_favorites(pseudo, password)
 
-'''
-# ============================================================
-# STATS (PUBLIC) - sur SQLite favorites + film
-# ============================================================
-@app.get("/stats/top_favorited")
-def stats_top_favorited(limit: int = 10):
-    with get_connection() as conn:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT f.id_film, f.titre, f.annee, f.realisateur, f.genre,
-                   COUNT(*) AS nb_favoris
-            FROM favorites fav
-            JOIN film f ON f.id_film = fav.id_film
-            GROUP BY f.id_film
-            ORDER BY nb_favoris DESC
-            LIMIT ?;
-            """,
-            (limit,),
-        )
-        rows = cur.fetchall()
-        return [dict(r) for r in rows] if rows else []
-
-
-# ============================================================
-# ✅ NOUVEAU : Top films favoris par genre saisi par l'utilisateur
-# ============================================================
-@app.get("/stats/top_favorited_by_genre")
-def stats_top_favorited_by_genre(
-    genre: str = Query(..., min_length=1),
-    limit: int = Query(default=10, ge=1, le=100),
-):
-    """
-    Renvoie les films les plus ajoutés en favoris pour un genre donné.
-    Comme film.genre est une chaîne type "Action, Drama", on filtre en LIKE (contains),
-    insensible à la casse.
-    """
-    g = genre.strip().lower()
-
-    with get_connection() as conn:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT f.id_film, f.titre, f.annee, f.realisateur, f.genre,
-                   COUNT(*) AS nb_favoris
-            FROM favorites fav
-            JOIN film f ON f.id_film = fav.id_film
-            WHERE LOWER(f.genre) LIKE ?
-            GROUP BY f.id_film
-            ORDER BY nb_favoris DESC
-            LIMIT ?;
-            """,
-            (f"%{g}%", limit),
-        )
-        rows = cur.fetchall()
-
-    return [dict(r) for r in rows] if rows else []
-'''
 
 if __name__ == "__main__":
-    dao.drop_table()
-    DAO()
     uvicorn.run(app, host="0.0.0.0", port=8000)
