@@ -1,5 +1,5 @@
 {
-    // Interpréteur Python du projet
+
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
 
     // Analyse et complétion Pylance
@@ -8,13 +8,16 @@
     ],
     "python.languageServer": "Pylance",
 
-    // Configuration des tests
-    "python.testing.pytestArgs": [
-        "src/tests",
-        "--cov=src",
-        "--cov-report=term"
-    ],
-    "python.testing.unittestEnabled": false,
+    // Tests avec pytest
     "python.testing.pytestEnabled": true,
-    "python.testing.cwd": "${workspaceFolder}"
+    "python.testing.unittestEnabled": false,
+    "python.testing.cwd": "${workspaceFolder}",
+    "python.testing.pytestArgs": [
+        "src/tests",          // dossier des tests
+        "--cov=src",          // dossier à mesurer pour la couverture
+        "--cov-report=term",  // affiche la couverture dans le terminal
+    ],
+
+
+    "python.testing.autoTestDiscoverOnSaveEnabled": true
 }
