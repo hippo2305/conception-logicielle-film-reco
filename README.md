@@ -9,8 +9,6 @@ l'ENSAI, consiste à :
 
 ## 1. Cloner le dépôt
 
-Le dépôt étant publique, il faut avoir les accès nécessaires.
-
 ```bash
 git clone https://github.com/hippo2305/conception-logicielle-film-reco.git
 cd conception-logicielle-film-reco
@@ -33,7 +31,7 @@ POSTGRES_PORT =
 POSTGRES_DATABASE =
 POSTGRES_USER =
 POSTGRES_PASSWORD =
-TMDB_BASE_URL =
+TMDB_BASE_URL = 
 TMDB_API_KEY =
 TMDB_API_TOKEN =
 ```
