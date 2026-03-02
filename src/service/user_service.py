@@ -2,6 +2,16 @@ import logging
 import os
 import re
 
+from src.app_errors.app_errors import (
+    CreationError,
+    IncorrectPasswordError,
+    InvalidInputError,
+    InvalidPassWordError,
+    SomeThingWentWrongError,
+    UserAlreadyExistsError,
+    UserNotFoundError,
+    UserPermissionError,
+)
 from src.business_object.admin import Admin
 from src.business_object.client import Client
 from src.business_object.film import Film
@@ -44,18 +54,18 @@ class UserService:
             raise TypeError("L'utilisateur doit être de type User")
 
         if not self.validate_email(user.email):
-            raise Exception("L'email n'est pas valide")
+            raise InvalidInputError("L'email n'est pas valide")
 
-        verif_user_existed = self.user_dao.get_by_pseudo(user.pseudo)
+        verif_user_existed = self.user_dao.get_user_by_pseudo(user.pseudo)
         if verif_user_existed:
             message = f"Le pseudo '{user.pseudo}' est déjà utilisé."
-            raise Exception(message)
+            raise UserAlreadyExistsError(message)
 
         all_users = self.user_dao.get_all_users()
         # for user_ in all_users:
         if any(user_.email == user.email for user_ in all_users):
             message = f"Le mail '{user.email}' est déjà utilisé."
-            raise Exception(message)
+            raise UserAlreadyExistsError(message)
 
         password_processor = PasswordProcessing(user._psswd)
         if not password_processor.validate_password(user._psswd):
@@ -64,7 +74,7 @@ class UserService:
                 "Il doit contenir une majuscule, un caractère spécial, \n"
                 "et faire au moins 8 caractères."
             )
-            raise Exception(message)
+            raise InvalidPassWordError(message)
 
         #  on change le password du user en le remplaçant par celui hashé
         user._psswd = password_processor._hash_password().decode("utf-8")
@@ -75,23 +85,23 @@ class UserService:
             return user
         else:
             message = "Échec de la création de l'utilisateur."
-            raise Exception(message)
+            raise CreationError(message)
 
     def login(self, pseudo: str, psswd: str) -> Client | Admin:
         """
         Connecte un utilisateur et crée sa session.
         Stocke la session dans self.current_session.
         """
-        user = self.user_dao.get_by_pseudo(pseudo)
+        user = self.user_dao.get_user_by_pseudo(pseudo)
         if not user:
             message = "Utilisateur non trouvé."
-            raise Exception(message)
+            raise UserNotFoundError(message)
 
         if not PasswordProcessing._verify_password(
             None, psswd, user._psswd.encode("utf-8")
         ):
             message = "Mot de passe incorrect."
-            raise Exception(message)
+            raise IncorrectPasswordError(message)
 
         self.current_session = self.session_manager.create_session(user)
 
@@ -117,16 +127,16 @@ class UserService:
 
         if actor.role != "admin":
             message = "Seuls les administrateurs peuvent modifier les rôles."
-            raise Exception(message)
+            raise UserPermissionError(message)
 
-        concerned_user = self.user_dao.get_by_pseudo(pseudo)
+        concerned_user = self.user_dao.get_user_by_pseudo(pseudo)
         if not concerned_user:
             message = "L'utilisateur dont vous tentez de changer le rôle n'existe pas"
-            raise Exception(message)
+            raise UserNotFoundError(message)
 
         if concerned_user.role == "admin":
             message = "Vous ne pouvez pas modifier le rôle d'un Administrateur"
-            raise Exception(message)
+            raise UserPermissionError(message)
 
         changed = self.user_dao.change_user_role(pseudo=pseudo, new_role=new_role)
         return changed
@@ -139,7 +149,7 @@ class UserService:
             raise TypeError("L'email doit être une chaîne de caractères")
 
         if not self.validate_email(email=new_email):
-            raise Exception("Adresse email invalide.")
+            raise InvalidInputError("Adresse email invalide.")
 
         actor = self.current_session.user
 
@@ -151,19 +161,19 @@ class UserService:
                 )
                 return email_changed
             except Exception as e:
-                raise Exception(
+                raise SomeThingWentWrongError(
                     f"Une erreur innatendue s'est produite\n {e}"
                 ) from e
 
         # Si l'utilisateur est admin, il peut modifier celui d’un client
         if actor.role == "admin":
-            concerned_user = self.user_dao.get_by_pseudo(pseudo=pseudo)
+            concerned_user = self.user_dao.get_user_by_pseudo(pseudo=pseudo)
             if not concerned_user:
-                raise Exception(
+                raise UserNotFoundError(
                     "L'utilisateur dont vous tentez de modifier le courriel n'existe pas"
                 )
             if concerned_user.role != "client":
-                raise Exception(
+                raise UserPermissionError(
                     "Vous ne pouvez modifier que le courriel d’un client"
                 )
 
@@ -173,12 +183,12 @@ class UserService:
                 )
                 return email_changed
             except Exception as e:
-                raise Exception(
+                raise SomeThingWentWrongError(
                     f"Une erreur innatendue s'est produite\n {e}"
                 ) from e
 
         # Si c’est un client qui veut modifier un autre utilisateur
-        raise Exception(
+        raise UserPermissionError(
             "Vous ne disposez pas des accès nécessaires pour"
             "modifier le courriel d’un autre utilisateur"
         )
@@ -200,7 +210,7 @@ class UserService:
                 "Mot de passe invalide ! Il doit contenir majuscule, chiffre et caractère spécial"
                 f" et faire {os.environ['PASSWORD_LENGTH']}."
             )
-            raise Exception(message)
+            raise InvalidPassWordError(message)
 
         actor = self.current_session.user
         new_psswd = password_processor._hash_password().decode("utf-8")
@@ -209,16 +219,16 @@ class UserService:
             return changed
 
         if actor.role != "admin":
-            raise Exception(
+            raise UserPermissionError(
                 "Vous ne pouvez pas changer le mot de passe d'un autre utilisateur"
             )
 
-        concerned_user = self.user_dao.get_by_pseudo(pseudo)
+        concerned_user = self.user_dao.get_user_by_pseudo(pseudo)
         if not concerned_user:
-            raise Exception("Cet utilisateur n'existe pas.")
+            raise UserNotFoundError("Cet utilisateur n'existe pas.")
 
         if concerned_user.role == "admin":
-            raise Exception(
+            raise UserPermissionError(
                 "Vous ne pouvez pas modifier le mot de passe d'un autre administrateur"
             )
 
@@ -235,14 +245,14 @@ class UserService:
             raise TypeError("Le pseudo doit être une chaîne de caractères")
 
         actor = self.current_session.user
-        target_user = self.user_dao.get_by_pseudo(pseudo)
+        target_user = self.user_dao.get_user_by_pseudo(pseudo)
         if not target_user:
-            raise Exception(f"L'utilisateur '{pseudo}' n'existe pas.")
+            raise UserNotFoundError(f"L'utilisateur '{pseudo}' n'existe pas.")
 
         elif actor.role == "admin" and target_user.role != "admin":
             success = self.user_dao.delete_user(pseudo)
         else:
-            raise Exception(
+            raise UserPermissionError(
                 "Vous n'avez pas les droits pour supprimer ce compte."
             )
 
@@ -258,11 +268,11 @@ class UserService:
 
         actor = self.current_session.user
         if actor.role != "admin" and actor.pseudo != pseudo:
-            raise Exception(
+            raise UserPermissionError(
                 "Vous n'avez pas les droits requis pour effectuer cette recherche."
             )
 
-        searched_user = self.user_dao.get_by_pseudo(pseudo=pseudo)
+        searched_user = self.user_dao.get_user_by_pseudo(pseudo=pseudo)
 
         return searched_user
 
@@ -274,13 +284,14 @@ class UserService:
 
         actor = self.current_session.user
         if actor.role != "admin":
-            raise Exception(
+            raise UserPermissionError(
                 "Vous n'avez pas les droits requis pour effectuer cette recherche."
             )
 
         users_list = self.user_dao.get_all_users()
 
         return users_list
+
 
     @log
     def add_favorite(self, pseudo: str, film: Film):
@@ -298,6 +309,8 @@ class UserService:
             logging.error(f"Erreur lors de l'ajout des favoris : {e}")
             return False
 
+
+    @log
     def get_favorites(self, pseudo: str):
         try:
             user = self.user_dao.get_by_pseudo(pseudo)
