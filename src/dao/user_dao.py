@@ -39,7 +39,7 @@ class UserDao:
         try:
             self.dao.insert_query(
                 "USERS", "pseudo, email, mdp, user_role",
-                f"{user.pseudo}, {user.email}, {user.psswd}, {role}"
+                f"'{user.pseudo}', '{user.email}', '{user.psswd}', '{role}'"
             )
             return True
         except Exception as e:
@@ -49,7 +49,7 @@ class UserDao:
     @log
     def add_favorites(self, user: User) -> bool:
         """
-        Ajoute le casting d'un film dans la BDD et ajoute les associations
+        Ajoute les favoris d'un utilisateur dans la BDD et ajoute les associations
         """
         try:
             id_user = self.get_id(user)
@@ -264,7 +264,7 @@ class UserDao:
         Récupère un utilisateur spécifique par son pseudo.
         """
         try:
-            res = self.dao.select_query("USERS", where = f"pseudo = {pseudo}")
+            res = self.dao.select_query("USERS", where = f"pseudo = '{pseudo}'")
             if not res:
                 return None
 

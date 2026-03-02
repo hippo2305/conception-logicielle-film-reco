@@ -1,2 +1,0 @@
-class SomeThingWentWrongError(Exception):
-    pass
