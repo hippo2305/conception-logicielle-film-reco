@@ -12,14 +12,14 @@ import uvicorn
 from src.client.film_client import FilmClient
 from src.client.user_client import UserClient
 from src.dao.dao import DAO
+from start import start
 
 
 ROOT_PATH = os.getenv("ROOT_PATH", "/proxy/8000")  # "" en local si besoin
+start()
 
 app = FastAPI(root_path=ROOT_PATH, title="MovieReco API")
 
-dao = DAO()
-dao.drop_table()
 dao = DAO()
 user_client = UserClient()
 film_client = FilmClient()
