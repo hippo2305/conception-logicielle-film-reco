@@ -1,13 +1,23 @@
 {
-    "snyk.advanced.autoSelectOrganization": true,
-    "python.defaultInterpreterPath": "/home/ensai/.pyenv/versions/3.13.11/bin/python",
+
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+    // Analyse et complétion Pylance
     "python.analysis.extraPaths": [
-        "/home/ensai/.pyenv/versions/3.13.11/lib/python3.13/site-packages"
+        "${workspaceFolder}/.venv/lib/python3.13/site-packages"
     ],
     "python.languageServer": "Pylance",
-    "python.testing.pytestArgs": [
-        "src/tests"
-    ],
+
+    // Tests avec pytest
+    "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.cwd": "${workspaceFolder}",
+    "python.testing.pytestArgs": [
+        "src/tests",          // dossier des tests
+        "--cov=src",          // dossier à mesurer pour la couverture
+        "--cov-report=term",  // affiche la couverture dans le terminal
+    ],
+
+
+    "python.testing.autoTestDiscoverOnSaveEnabled": true
 }
