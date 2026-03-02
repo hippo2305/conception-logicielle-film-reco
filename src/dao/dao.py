@@ -77,6 +77,7 @@ class DAO:
                 cursor.execute(query)
                 connection.commit()
 
+
     def update_query(self, tablename, var, value, where=None, other=None):
         query = f"UPDATE {tablename} SET {var} = {value}"
         if where:

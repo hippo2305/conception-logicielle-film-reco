@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import os
-from typing import Annotated
 
-from fastapi import FastAPI, Form, Query
+from fastapi import FastAPI, Query
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -12,12 +11,14 @@ import uvicorn
 
 from src.client.film_client import FilmClient
 from src.client.user_client import UserClient
+from src.dao.dao import DAO
 
 
 ROOT_PATH = os.getenv("ROOT_PATH", "/proxy/8000")  # "" en local si besoin
 
 app = FastAPI(root_path=ROOT_PATH, title="MovieReco API")
 
+dao = DAO()
 user_client = UserClient()
 film_client = FilmClient()
 
@@ -61,8 +62,9 @@ class SignupResponse(BaseModel):
 
 class FavoriteAddResponse(BaseModel):
     status: str = "ok"
-    id_film: int
     titre: str
+    realisateur: str
+    annee: str
     annee: int | None = None
 
 
@@ -85,11 +87,11 @@ async def redirect_to_docs():
     responses={400: {"model": ErrorResponse}},
 )
 def signup(
-    pseudo: Annotated[str, Form()],
-    password: Annotated[str, Form()],
-    email: Annotated[str | None, Form()] = None,
+    pseudo: str = Query(...),
+    email: str = Query(...),
+    password: str = Query(...),
 ):
-    user_client.signup(pseudo, email, password)
+    return user_client.signup(pseudo, email, password)
 
 
 # ============================================================
@@ -98,10 +100,9 @@ def signup(
 
 @app.get("/tmdb/movie")
 def tmdb_movie_details(
-    titre: int = Query(..., ge=1),
-    nb_acteurs: int = Query(default=5, ge=0, le=20),
+    titre: str = Query(...),
 ):
-    return film_client.get_film_tmdb(titre=titre, nb_acteurs=nb_acteurs)
+    return film_client.get_film_tmdb(titre)
 
 
 """
@@ -129,11 +130,11 @@ def list_films(
     responses={401: {"model": ErrorResponse}},
 )
 def add_favorite_tmdb(
-    pseudo: Annotated[str, Form()],
-    password: Annotated[str, Form()],
-    titre: Annotated[str, Form()],
+    pseudo: str = Query(...),
+    password: str = Query(...),
+    titre: str = Query(...),
 ):
-    user_client.add_favorite(pseudo, password, titre)
+    return user_client.add_favorite(pseudo, password, titre)
 
 """
 @app.post(
@@ -217,5 +218,6 @@ def stats_top_favorited_by_genre(
 '''
 
 if __name__ == "__main__":
-
+    dao.drop_table()
+    DAO()
     uvicorn.run(app, host="0.0.0.0", port=8000)
