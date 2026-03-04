@@ -2,7 +2,7 @@ name: Build & Push to GHCR
 
 on:
   push:
-    branches: ["harmonisation"]
+    branches: ["main"]
     tags: ["v*.*.*"]   # si tu pushes un tag v1.2.3
   workflow_dispatch:
 
