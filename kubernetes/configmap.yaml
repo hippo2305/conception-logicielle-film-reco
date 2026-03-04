@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configuration-application
+data:
+  VARIABLE_ENVIRONNEMENT1: variable_environnement
+  APP_TITLE : movie-reco
+  
+  TMDB_BASE_URL : https://api.themoviedb.org/3
+  

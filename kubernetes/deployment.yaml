@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: application
+spec:
+  selector:
+    matchLabels:
+      app: application
+  template:
+    metadata:
+      labels:
+        app: application
+    spec:
+      containers:
+        - name: application
+          image: ghcr.io/hippo2305/conception-logicielle-film-reco:sha-4d566e0 # Lien de l'image que vous avez construit pour votre brique applicative
+          imagePullPolicy: Always
+          resources:
+            limits:
+              memory: "200Mi"
+              cpu: "300m"
+          # Permet de charger les variables d'environnement dans votre application via le remplissage d'une ressources "cle" "valeur" kubernetes, le configmap.
+          envFrom:
+            - configMapRef:
+                name: configuration-application # ici le nom de votre configmap
+            - secretRef:
+                name: secrets-application  
+          ports:
+            - containerPort: 8000 # Port du serveur lancé, voir votre image docker

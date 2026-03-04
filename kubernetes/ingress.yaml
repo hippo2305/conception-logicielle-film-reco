@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: application
+  labels:
+    name: application
+spec:
+  rules:
+    - host: application-louispellot.user.lab.sspcloud.fr # CETTE URL est unique, donc si quelqu'un l'a déjà prise vous ne pourrez pas la prendre. Changer le host vers une url qui fonctionne, une url du type *.kub.sspcloud.fr exemple mon-application.kub.sspcloud.fr
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: application
+                port:
+                  number: 80 # port rentrée coté service

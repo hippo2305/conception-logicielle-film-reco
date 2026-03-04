@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: application
+spec:
+  selector:
+    app: application # cela doit correspondre exactement à un label présent sur les Pods créés par ton Deployment. (spec: template: metadata: labels: app: application)
+  ports:
+    - port: 80 # PORT QUE VOUS VOULEZ, doit correspondre côté ingress.
+      targetPort: 8000 # PORT DU CONTENEUR, ET DONC DE VOTRE SERVEUR (côté fichier deployment)
