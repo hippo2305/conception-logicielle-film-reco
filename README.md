@@ -35,7 +35,7 @@ TMDB_BASE_URL = https://api.themoviedb.org/3
 TMDB_API_KEY =
 TMDB_API_TOKEN =
 ```
-- **Pour obenir une clef et un token de l'API**
+- **Pour obtenir une clef et un token de l'API**
 Créer un compte sur https://www.themoviedb.org/
 Une fois connecté, vous avez votre clef et votre token ici : https://www.themoviedb.org/settings/api
 

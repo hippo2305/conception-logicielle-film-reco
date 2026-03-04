@@ -68,6 +68,9 @@ instance/
 # Scrapy stuff:
 .scrapy
 
+# Docker stuff
+.dockerignore
+
 # Sphinx documentation
 docs/_build/
 
@@ -149,6 +152,7 @@ activemq-data/
 
 # Environments
 .env
+.env.docker
 .envrc
 .venv
 env/

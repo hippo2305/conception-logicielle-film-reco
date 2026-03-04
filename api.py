@@ -49,7 +49,6 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-
 # ============================================================
 # Models
 # ============================================================
@@ -73,12 +72,6 @@ class FavoriteAddResponse(BaseModel):
 @app.get("/", include_in_schema=False)
 async def redirect_to_docs():
     return RedirectResponse(url="/docs", status_code=HTTP_303_SEE_OTHER)
-
-
-# ============================================================
-# AUTH helper
-# ============================================================
-
 
 # ============================================================
 # USERS
@@ -106,22 +99,6 @@ def tmdb_movie_details(
 ):
     return film_client.get_film_tmdb(titre)
 
-
-"""
-# ============================================================
-# FILMS (PUBLIC)
-# IMPORTANT : maintenant /films = recherche TMDB (plus SQLite)
-# ============================================================
-@app.get("/films")
-def list_films(
-    titre: str = Query(..., min_length=1),
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=20, ge=1, le=50),
-):
-    return tmdb_service.search_movies_min(query=titre, page=page, limit=limit)
-"""
-
-
 # ============================================================
 # FAVORIS (AUTH REQUIRED via pseudo + password)
 # Favori = film choisi dans TMDB (movie_id)
@@ -137,24 +114,6 @@ def add_favorite_tmdb(
     titre: str = Query(...),
 ):
     return user_client.add_favorite(pseudo, password, titre)
-
-"""
-@app.post(
-    "/favorites/remove_tmdb",
-    responses={401: {"model": ErrorResponse}},
-)
-def remove_favorite_tmdb(
-    pseudo: Annotated[str, Form()],
-    password: Annotated[str, Form()],
-    movie_id: Annotated[int, Form()],
-):
-    user = authenticate_user(pseudo, password)
-    if not user:
-        return {"error": "Authentification échouée"}
-
-    fav_service.remove_favorite(user_id=user["id_user"], movie_id=int(movie_id))
-    return {"status": "ok"}
-"""
 
 @app.get("/favorites", responses={401: {"model": ErrorResponse}})
 def get_favorites(pseudo: str, password: str):
