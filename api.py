@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import os
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 from starlette.status import HTTP_303_SEE_OTHER
 import uvicorn
 
@@ -82,11 +82,11 @@ async def redirect_to_docs():
     responses={400: {"model": ErrorResponse}},
 )
 def signup(
-    pseudo: str = Query(...),
-    email: str = Query(...),
-    password: str = Query(...),
+    pseudo: str,
+    email: str,
+    password: SecretStr,
 ):
-    return user_client.signup(pseudo, email, password)
+    return user_client.signup(pseudo, email, password.get_secret_value())
 
 
 # ============================================================
@@ -95,7 +95,7 @@ def signup(
 
 @app.get("/tmdb/movie")
 def tmdb_movie_details(
-    titre: str = Query(...),
+    titre: str,
 ):
     return film_client.get_film_tmdb(titre)
 
@@ -109,15 +109,15 @@ def tmdb_movie_details(
     responses={401: {"model": ErrorResponse}},
 )
 def add_favorite_tmdb(
-    pseudo: str = Query(...),
-    password: str = Query(...),
-    titre: str = Query(...),
+    pseudo: str,
+    password: SecretStr,
+    titre: str,
 ):
-    return user_client.add_favorite(pseudo, password, titre)
+    return user_client.add_favorite(pseudo, password.get_secret_value(), titre)
 
 @app.get("/favorites", responses={401: {"model": ErrorResponse}})
-def get_favorites(pseudo: str, password: str):
-    return user_client.get_favorites(pseudo, password)
+def get_favorites(pseudo: str, password: SecretStr):
+    return user_client.get_favorites(pseudo, password.get_secret_value())
 
 
 if __name__ == "__main__":

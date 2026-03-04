@@ -25,7 +25,7 @@ uv sync
 Créer un fichier `.env` à la racine du projet :
 
 ```env
-PPOSTGRES = False
+POSTGRES = False
 POSTGRES_HOST =
 POSTGRES_PORT =
 POSTGRES_DATABASE =
