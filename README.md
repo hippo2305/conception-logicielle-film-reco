@@ -9,8 +9,6 @@ l'ENSAI, consiste à :
 
 ## 1. Cloner le dépôt
 
-Le dépôt étant publique, il faut avoir les accès nécessaires.
-
 ```bash
 git clone https://github.com/hippo2305/conception-logicielle-film-reco.git
 cd conception-logicielle-film-reco
@@ -33,10 +31,13 @@ POSTGRES_PORT =
 POSTGRES_DATABASE =
 POSTGRES_USER =
 POSTGRES_PASSWORD =
-TMDB_BASE_URL =
+TMDB_BASE_URL = https://api.themoviedb.org/3
 TMDB_API_KEY =
 TMDB_API_TOKEN =
 ```
+- **Pour obtenir une clef et un token de l'API**
+Créer un compte sur https://www.themoviedb.org/
+Une fois connecté, vous avez votre clef et votre token ici : https://www.themoviedb.org/settings/api
 
 ## 4. Lancer les tests
 
@@ -49,16 +50,8 @@ uv run pytest
 ## 5. Lancer l'application
 
 ```bash
-uv run python main.py
+uv run uvicorn api:app --reload
 ```
-
-- **Création automatique de l’utilisateur administrateur**
-
-Lors du premier lancement du programme (`python main.py`), un utilisateur administrateur est automatiquement créé dans la base de données s’il n’existe pas déjà.
-
-Ce compte permet d’accéder aux fonctionnalités réservées à l’administrateur dès la première exécution du projet étant donné qu'il n'y a pas de superusers.
-
-**NB** : Vous ne devez jamais supprimer les comptes de tous les admins (il faut au moins en avoir un).
 
 ## Auteurs
 

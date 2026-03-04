@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app_errors import (
+from src.app_errors.app_errors import (
     CreationError,
     IncorrectPasswordError,
     InvalidInputError,

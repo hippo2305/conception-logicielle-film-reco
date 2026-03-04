@@ -1,7 +1,8 @@
+import logging
 import os
 import re
 
-from app_errors import (
+from src.app_errors.app_errors import (
     CreationError,
     IncorrectPasswordError,
     InvalidInputError,
@@ -11,9 +12,13 @@ from app_errors import (
     UserNotFoundError,
     UserPermissionError,
 )
-from src.business_object import Admin, Client, User
+from src.business_object.admin import Admin
+from src.business_object.client import Client
+from src.business_object.film import Film
+from src.business_object.user import User
 from src.dao.user_dao import UserDao
 from src.service.session_manager import SessionManager
+from src.utils.log_decorator import log
 from src.utils.psswd_proc import PasswordProcessing
 
 
@@ -51,7 +56,7 @@ class UserService:
         if not self.validate_email(user.email):
             raise InvalidInputError("L'email n'est pas valide")
 
-        verif_user_existed = self.user_dao.get_user_by_pseudo(user.pseudo)
+        verif_user_existed = self.user_dao.get_by_pseudo(user.pseudo)
         if verif_user_existed:
             message = f"Le pseudo '{user.pseudo}' est déjà utilisé."
             raise UserAlreadyExistsError(message)
@@ -87,7 +92,7 @@ class UserService:
         Connecte un utilisateur et crée sa session.
         Stocke la session dans self.current_session.
         """
-        user = self.user_dao.get_user_by_pseudo(pseudo)
+        user = self.user_dao.get_by_pseudo(pseudo)
         if not user:
             message = "Utilisateur non trouvé."
             raise UserNotFoundError(message)
@@ -124,7 +129,7 @@ class UserService:
             message = "Seuls les administrateurs peuvent modifier les rôles."
             raise UserPermissionError(message)
 
-        concerned_user = self.user_dao.get_user_by_pseudo(pseudo)
+        concerned_user = self.user_dao.get_by_pseudo(pseudo)
         if not concerned_user:
             message = "L'utilisateur dont vous tentez de changer le rôle n'existe pas"
             raise UserNotFoundError(message)
@@ -162,7 +167,7 @@ class UserService:
 
         # Si l'utilisateur est admin, il peut modifier celui d’un client
         if actor.role == "admin":
-            concerned_user = self.user_dao.get_user_by_pseudo(pseudo=pseudo)
+            concerned_user = self.user_dao.get_by_pseudo(pseudo=pseudo)
             if not concerned_user:
                 raise UserNotFoundError(
                     "L'utilisateur dont vous tentez de modifier le courriel n'existe pas"
@@ -218,7 +223,7 @@ class UserService:
                 "Vous ne pouvez pas changer le mot de passe d'un autre utilisateur"
             )
 
-        concerned_user = self.user_dao.get_user_by_pseudo(pseudo)
+        concerned_user = self.user_dao.get_by_pseudo(pseudo)
         if not concerned_user:
             raise UserNotFoundError("Cet utilisateur n'existe pas.")
 
@@ -240,7 +245,7 @@ class UserService:
             raise TypeError("Le pseudo doit être une chaîne de caractères")
 
         actor = self.current_session.user
-        target_user = self.user_dao.get_user_by_pseudo(pseudo)
+        target_user = self.user_dao.get_by_pseudo(pseudo)
         if not target_user:
             raise UserNotFoundError(f"L'utilisateur '{pseudo}' n'existe pas.")
 
@@ -267,7 +272,7 @@ class UserService:
                 "Vous n'avez pas les droits requis pour effectuer cette recherche."
             )
 
-        searched_user = self.user_dao.get_user_by_pseudo(pseudo=pseudo)
+        searched_user = self.user_dao.get_by_pseudo(pseudo=pseudo)
 
         return searched_user
 
@@ -286,3 +291,30 @@ class UserService:
         users_list = self.user_dao.get_all_users()
 
         return users_list
+
+
+    @log
+    def add_favorite(self, pseudo: str, film: Film):
+        try:
+            user = self.user_dao.get_by_pseudo(pseudo)
+            favorites = self.user_dao.get_favorites(user)
+            if favorites:
+                favorites.append(film)
+            else:
+                favorites = [film]
+            user.listfilms = favorites
+            self.user_dao.add_favorites(user)
+            return True
+        except Exception as e:
+            logging.error(f"Erreur lors de l'ajout des favoris : {e}")
+            return False
+
+
+    @log
+    def get_favorites(self, pseudo: str):
+        try:
+            user = self.user_dao.get_by_pseudo(pseudo)
+            return self.user_dao.get_favorites(user)
+        except Exception as e:
+            logging.error(f"Erreur lors de la récupération des favoris : {e}")
+            return None
