@@ -3,7 +3,6 @@ from pathlib import Path
 from src.dao.db_connection import DBConnection, LocalDBConnection
 
 
-DB_PATH = "app.db"
 SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
 class InitDB:
